@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Environment — the backend .env and storefront .env.local are both populated
+# with real credentials and a real publishable key. Never commit them.
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Medusa build output
+.medusa/
+
+# Uploaded product images — the local file provider writes here. Backed up
+# alongside Postgres, not in git.
+static/
+
+# Build / test artifacts
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+pnpm-debug.log*
