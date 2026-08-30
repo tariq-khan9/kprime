@@ -1,0 +1,26 @@
+services:
+  kprime-postgres:
+    image: postgres:18-alpine
+    container_name: kprime-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medusa
+      POSTGRES_PASSWORD: medusa
+      POSTGRES_DB: kprime
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  kprime-redis:
+    image: redis:8-alpine
+    container_name: kprime-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

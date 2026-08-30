@@ -1,0 +1,26 @@
+{
+  "name": "kprime",
+  "version": "0.0.1",
+  "private": true,
+  "description": "KPrime (Karkhano Prime) — Medusa v2 backend + Next.js storefront",
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "dev": "concurrently -n backend,storefront -c cyan,magenta \"pnpm dev:backend\" \"pnpm dev:storefront\"",
+    "dev:backend": "pnpm --filter kprime-backend run dev",
+    "dev:storefront": "pnpm --filter kprime-storefront run dev",
+    "build": "pnpm --filter kprime-backend run build && pnpm --filter kprime-storefront run build",
+    "lint": "pnpm --filter kprime-storefront run lint",
+    "migrate": "pnpm --filter kprime-backend exec medusa db:migrate",
+    "seed": "pnpm --filter kprime-backend run seed",
+    "seed:promotions": "pnpm --filter kprime-backend run seed:promotions",
+    "test:unit": "pnpm --filter kprime-backend run test:unit"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

@@ -1,0 +1,16 @@
+packages:
+  - kprime-backend
+  - kprime-storefront
+
+# pnpm 10 blocks dependency lifecycle scripts unless they are named here.
+# These six all need theirs: @swc/core and esbuild place native binaries that
+# Medusa's build and dev server depend on, and unrs-resolver, protobufjs and
+# msgpackr-extract ship platform-specific addons. Without this the backend
+# installs cleanly and then fails at run time.
+onlyBuiltDependencies:
+  - "@medusajs/telemetry"
+  - "@swc/core"
+  - esbuild
+  - msgpackr-extract
+  - protobufjs
+  - unrs-resolver
