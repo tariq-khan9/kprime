@@ -13,8 +13,16 @@ const CARD_FIELDS = [
   "handle",
   "thumbnail",
   "created_at",
-  "*variants.calculated_price",
   "variants.id",
+  // Named, not `*variants.calculated_price`. The wildcard returns the whole
+  // price object for every variant and costs 2,580 B/product against this
+  // catalogue; these three — all `toSummary` reads — cost 836 B. At 200
+  // products that is the difference between a 516KB and a 167KB cached entry.
+  "variants.calculated_price.calculated_amount",
+  "variants.calculated_price.original_amount",
+  "variants.calculated_price.currency_code",
+  // Not for ProductCard. These are what task 60 derives facets from, off this
+  // same cached set — dropping them would cost a second fetch per listing.
   "tags.value",
   "options.title",
   "options.values.value",
