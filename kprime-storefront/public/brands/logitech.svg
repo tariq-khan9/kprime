@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" role="img" aria-label="Logitech">
+  <title>Logitech</title>
+  <circle cx="16" cy="24" r="5" fill="#00B8FC"/><circle cx="16" cy="24" r="10" fill="none" stroke="#00B8FC" stroke-width="2"/>
+  <text x="36" y="31" font-family="Manrope, system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="19" font-weight="600" letter-spacing="0.08em"
+        fill="#00B8FC">Logitech</text>
+</svg>

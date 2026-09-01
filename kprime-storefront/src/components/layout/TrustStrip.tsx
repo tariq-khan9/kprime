@@ -68,7 +68,7 @@ export function TrustStrip({ className }: { className?: string }) {
   return (
     <section
       aria-label="Why shop with us"
-      className={cn("w-full border-y border-line bg-paper", className)}
+      className={cn("w-full border-y border-line bg-cream", className)}
     >
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* 2x2 at 360px — four across would give each item ~80px, too narrow

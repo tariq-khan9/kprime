@@ -130,16 +130,30 @@ export const PROMO_BANNERS: [PromoBanner, PromoBanner] = [
  *
  * `href` points at a category until task 57 introduces the `?brand=` param.
  */
-export type Brand = { name: string; href: string }
+export type Brand = { name: string; href: string; logo: string }
 
-// Annotated rather than `as const`: the literal tuple type would make
-// BrandStrip's empty-list guard a compile error, since TypeScript would know
-// the length is exactly 6.
+/**
+ * PLACEHOLDER logos.
+ *
+ * The files in public/brands/ are wordmarks generated for this build — each
+ * brand's NAME as plain type beside a simple geometric mark. They are NOT
+ * reproductions of anyone's trademarked logo artwork, which matters twice
+ * over: the catalogue records no manufacturer, so the shop does not currently
+ * stock any of these, and displaying a real logo for a brand you do not carry
+ * is a trademark problem rather than a theoretical one.
+ *
+ * Replace with real supplied logo files once the brands are genuine. They use
+ * `currentColor`, so the strip's muted-to-brand hover keeps working.
+ *
+ * Annotated rather than `as const`: the literal tuple type would make
+ * BrandStrip's empty-list guard a compile error, since TypeScript would know
+ * the length is exactly 6.
+ */
 export const BRANDS: Brand[] = [
-  { name: "Anker", href: "/categories/mobile-accessories" },
-  { name: "Baseus", href: "/categories/mobile-accessories" },
-  { name: "JBL", href: "/categories/audio" },
-  { name: "Logitech", href: "/categories/computer-accessories" },
-  { name: "Philips", href: "/categories/kitchen-appliances" },
-  { name: "Prestige", href: "/categories/cookware" },
+  { name: "Samsung", logo: "/brands/samsung.svg", href: "/categories/electronics" },
+  { name: "Lenovo", logo: "/brands/lenovo.svg", href: "/categories/computer-accessories" },
+  { name: "HP", logo: "/brands/hp.svg", href: "/categories/computer-accessories" },
+  { name: "Anker", logo: "/brands/anker.svg", href: "/categories/mobile-accessories" },
+  { name: "Philips", logo: "/brands/philips.svg", href: "/categories/kitchen-appliances" },
+  { name: "Logitech", logo: "/brands/logitech.svg", href: "/categories/computer-accessories" },
 ]

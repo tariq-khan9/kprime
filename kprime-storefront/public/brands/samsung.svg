@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" role="img" aria-label="Samsung">
+  <title>Samsung</title>
+  <ellipse cx="16" cy="24" rx="11" ry="7" fill="none" stroke="#1428A0" stroke-width="2.5"/>
+  <text x="36" y="31" font-family="Manrope, system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="19" font-weight="700" letter-spacing="0.14em"
+        fill="#1428A0">Samsung</text>
+</svg>

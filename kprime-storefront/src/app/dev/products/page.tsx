@@ -43,7 +43,7 @@ export default async function ProductsPage() {
   const first = products[0] ? await getProduct(products[0].handle) : null
 
   return (
-    <main className="min-h-screen bg-cream px-6 py-12 text-brand">
+    <main className="min-h-screen bg-paper px-6 py-12 text-brand">
       <div className="mx-auto flex max-w-3xl flex-col gap-8">
         <div>
           <h1 className="text-2xl font-bold">Products</h1>

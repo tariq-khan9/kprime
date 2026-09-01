@@ -34,7 +34,7 @@ export function Header({ tree }: { tree: CategoryNode[] }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b border-line bg-paper",
+        "sticky top-0 z-40 w-full border-b border-line bg-header",
         scrolled && "shadow-sm"
       )}
     >
@@ -50,9 +50,12 @@ export function Header({ tree }: { tree: CategoryNode[] }) {
             scrolled ? "lg:h-14" : "lg:h-[72px]"
           )}
         >
-          <MobileNav tree={tree} />
+          {/* -ml-2.5 does for the burger what -mr-2.5 does for the cart:
+              aligns the icon with the container edge rather than its hit
+              area. */}
+          <MobileNav tree={tree} className="-ml-2.5" />
 
-          <Logo compact={scrolled} className="lg:mr-4" />
+          <Logo compact={scrolled} className="lg:mr-6" />
 
           {/* Desktop: search takes the middle. Mobile: this collapses to an
               icon pushed right by ml-auto. */}
@@ -60,7 +63,18 @@ export function Header({ tree }: { tree: CategoryNode[] }) {
             <SearchBar />
           </div>
 
-          <CartButton className="lg:ml-4" />
+          {/*
+            -mr-2.5 pulls the button's 44px hit area past the container padding
+            so the ICON — not the invisible tap target around it — lines up with
+            the container's right edge, and with the content below.
+
+            lg:ml-auto, not a fixed margin: the search box is capped at max-w-xl,
+            so on a wide screen a fixed margin left the cart sitting just after
+            the search with hundreds of pixels of empty space to its right. The
+            auto margin absorbs that space and keeps the cart pinned to the
+            right edge at every width, matching mobile.
+          */}
+          <CartButton className="-mr-2.5 lg:ml-auto" />
         </div>
       </div>
 

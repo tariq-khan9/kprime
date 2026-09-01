@@ -105,7 +105,14 @@ function Branch({
   )
 }
 
-export function MobileNav({ tree }: { tree: CategoryNode[] }) {
+export function MobileNav({
+  tree,
+  className,
+}: {
+  tree: CategoryNode[]
+  /** Applied to the trigger button, so the header can align its icon. */
+  className?: string
+}) {
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
 
@@ -122,7 +129,8 @@ export function MobileNav({ tree }: { tree: CategoryNode[] }) {
           className={cn(
             "flex size-11 items-center justify-center rounded-md text-brand",
             "hover:bg-brand/5 focus-visible:outline-none focus-visible:ring-2",
-            "focus-visible:ring-brand lg:hidden"
+            "focus-visible:ring-brand lg:hidden",
+            className
           )}
         >
           <MenuIcon />

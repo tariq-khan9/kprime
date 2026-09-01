@@ -1,36 +1,54 @@
-"use client"
-
 import Link from "next/link"
-import { useState } from "react"
 
 import type { CategoryNode } from "@/lib/data/categories"
 import { cn } from "@/lib/utils/format"
 
 /**
- * Levels 3 and deeper, rendered recursively.
+ * One level of the tree, inline and pipe-separated:
  *
- * Not capped at a fixed depth: the tree is whatever admin returns, and a
- * hardcoded two levels would silently drop a third the day someone adds one.
+ *   Skincare | Makeup | Fragrances
+ *
+ * Recursive, so a third level renders beneath its parents in muted text rather
+ * than being dropped — the tree is whatever admin returns, and a hardcoded two
+ * levels would silently lose a third the day someone adds one.
  */
-function SubTree({ nodes, depth }: { nodes: CategoryNode[]; depth: number }) {
+function InlineLevel({ nodes, depth }: { nodes: CategoryNode[]; depth: number }) {
   if (nodes.length === 0) {
     return null
   }
 
+  const deeper = nodes.filter((node) => node.children.length > 0)
+
   return (
-    <ul className={cn("flex flex-col gap-1", depth > 0 && "ml-3 mt-1")}>
-      {nodes.map((node) => (
-        <li key={node.id}>
-          <Link
-            href={`/categories/${node.handle}`}
-            className="block py-0.5 text-muted hover:text-brand"
-          >
-            {node.name}
-          </Link>
-          <SubTree nodes={node.children} depth={depth + 1} />
-        </li>
+    <>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {nodes.map((node, i) => (
+          <span key={node.id} className="flex items-center gap-x-3">
+            {i > 0 && (
+              <span aria-hidden className="text-line">
+                |
+              </span>
+            )}
+            <Link
+              href={`/categories/${node.handle}`}
+              className={cn(
+                "whitespace-nowrap hover:text-brand-light hover:underline",
+                depth === 0 ? "font-medium text-brand" : "text-sm text-muted"
+              )}
+            >
+              {node.name}
+            </Link>
+          </span>
+        ))}
+      </div>
+
+      {deeper.map((node) => (
+        <div key={node.id} className="flex flex-wrap items-baseline gap-x-3">
+          <span className="text-sm text-muted">{node.name}:</span>
+          <InlineLevel nodes={node.children} depth={depth + 1} />
+        </div>
       ))}
-    </ul>
+    </>
   )
 }
 
@@ -42,63 +60,55 @@ export type CategoryMegaMenuProps = {
 /**
  * Desktop hover navigation. Hidden below lg — MobileNav covers that range, and
  * the two never render together.
+ *
+ * Pure CSS hover, no state: that is what makes the panel fade in smoothly
+ * rather than appearing instantly, and it keeps this a server component. The
+ * panel lives inside its trigger's <li>, so moving the pointer down into it
+ * keeps the hover alive without any JS bridging.
  */
 export function CategoryMegaMenu({ tree, className }: CategoryMegaMenuProps) {
-  const [openId, setOpenId] = useState<string | null>(null)
-
   return (
-    <nav
-      aria-label="Categories"
-      // onMouseLeave on the wrapper rather than each item, so moving the
-      // pointer from the trigger down into the panel does not close it.
-      onMouseLeave={() => setOpenId(null)}
-      className={cn("hidden lg:block", className)}
-    >
+    <nav aria-label="Categories" className={cn("hidden lg:block", className)}>
       <ul className="flex items-center gap-1">
-        {tree.map((top) => {
-          const open = openId === top.id
+        {tree.map((top) => (
+          // `static` so the panel below can span the full header width rather
+          // than being pinned under this one item. The sticky <header> is the
+          // positioning context.
+          <li key={top.id} className="group static">
+            <Link
+              href={`/categories/${top.handle}`}
+              className={cn(
+                "flex h-11 items-center rounded-md px-3 font-medium text-brand",
+                "transition-colors hover:bg-brand/5",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              )}
+            >
+              {top.name}
+            </Link>
 
-          return (
-            <li key={top.id} className="static">
-              <Link
-                href={`/categories/${top.handle}`}
-                onMouseEnter={() => setOpenId(top.id)}
-                onFocus={() => setOpenId(top.id)}
-                aria-expanded={top.children.length > 0 ? open : undefined}
+            {top.children.length > 0 && (
+              <div
                 className={cn(
-                  "flex h-11 items-center rounded-md px-3 font-medium",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
-                  open ? "text-brand-light" : "text-brand hover:text-brand-light"
+                  "absolute inset-x-0 top-full z-40 border-t border-line bg-paper shadow-lg",
+                  // Fades and slides down. `invisible` rather than `hidden` so
+                  // there is something to transition from, and it still cannot
+                  // be clicked or tabbed into while closed.
+                  "invisible -translate-y-1 opacity-0 transition-all duration-200 ease-out",
+                  "group-hover:visible group-hover:translate-y-0 group-hover:opacity-100",
+                  "group-focus-within:visible group-focus-within:translate-y-0",
+                  "group-focus-within:opacity-100"
                 )}
               >
-                {top.name}
-              </Link>
-
-              {open && top.children.length > 0 && (
-                // Full-width panel anchored to the header, not to the trigger:
-                // column counts vary per category and a trigger-anchored panel
-                // would sit half off-screen under the rightmost item.
-                <div className="absolute inset-x-0 top-full z-40 border-t border-line bg-paper shadow-lg">
-                  <div className="mx-auto max-w-7xl px-8 py-6">
-                    <div className="grid grid-cols-4 gap-x-8 gap-y-6">
-                      {top.children.map((child) => (
-                        <div key={child.id} className="flex flex-col gap-2">
-                          <Link
-                            href={`/categories/${child.handle}`}
-                            className="font-bold text-brand hover:text-brand-light"
-                          >
-                            {child.name}
-                          </Link>
-                          <SubTree nodes={child.children} depth={0} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {/* Compact: one wrapped row rather than a grid of columns, so
+                    the panel is a strip under the header instead of a full
+                    drop-down that covers the page. */}
+                <div className="mx-auto flex max-w-7xl flex-col gap-2 px-8 py-4">
+                  <InlineLevel nodes={top.children} depth={0} />
                 </div>
-              )}
-            </li>
-          )
-        })}
+              </div>
+            )}
+          </li>
+        ))}
       </ul>
     </nav>
   )

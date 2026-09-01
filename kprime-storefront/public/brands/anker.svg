@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" role="img" aria-label="Anker">
+  <title>Anker</title>
+  <path d="M16 14l9 17H7z" fill="none" stroke="#00A0B0" stroke-width="2.5" stroke-linejoin="round"/>
+  <text x="36" y="31" font-family="Manrope, system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="19" font-weight="700" letter-spacing="0.10em"
+        fill="#00A0B0">Anker</text>
+</svg>

@@ -28,7 +28,7 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
     // newsletter form today, add-to-cart in task 94. Children stay server
     // components; only the provider itself is client.
     <ToastProvider>
-      <div className="flex min-h-screen flex-col bg-cream">
+      <div className="flex min-h-screen flex-col bg-paper">
         <AnnouncementBar />
         <Header tree={tree} />
 

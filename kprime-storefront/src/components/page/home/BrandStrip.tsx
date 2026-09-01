@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 
 import { BRANDS } from "@/config/site"
@@ -6,13 +7,16 @@ import { cn } from "@/lib/utils/format"
 /**
  * Brands the shop stocks.
  *
- * Rendered as text lockups rather than logo images, and deliberately so: the
- * catalogue records no manufacturer, so these names are placeholders from
- * config/site.ts. Inventing logo files would make placeholder data look
- * authoritative and risk shipping someone else's trademark.
+ * The logo files are placeholder wordmarks — see config/site.ts. They carry the
+ * brand names but none of the trademarked artwork, because the catalogue
+ * records no manufacturer yet and showing a real logo for a brand you do not
+ * carry is a trademark problem, not a cosmetic one.
  *
- * Greyscale-to-colour on hover is impossible without images, so the muted →
- * brand transition does the same job.
+ * Greyscale by default, colour on hover, per task 53 — a CSS filter on the
+ * image rather than a text colour, because an SVG loaded through <img> is a
+ * separate document and cannot inherit `currentColor` from this page. That is
+ * also how real supplied logos will behave, so swapping them in needs no
+ * change here.
  *
  * Links point at categories until task 57 adds the `?brand=` filter param.
  */
@@ -27,22 +31,35 @@ export function BrandStrip({ className }: { className?: string }) {
         Brands we stock
       </h2>
 
-      {/* Wraps naturally at 360px into two or three rows; settles into one row
-          from lg. Not a grid — brand names have very different widths and a
-          grid would leave ragged gaps. */}
+      {/* Wraps into two or three rows at 360px, settles into one from lg. Not a
+          grid — logo widths differ enough that fixed columns leave ragged
+          gaps. */}
       <ul className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
         {BRANDS.map((brand) => (
           <li key={brand.name}>
             <Link
               href={brand.href}
+              aria-label={brand.name}
               className={cn(
-                "flex min-h-11 items-center rounded-md border border-line bg-paper px-4",
-                "font-medium text-muted transition-colors",
-                "hover:border-brand hover:text-brand",
+                "group flex h-16 w-32 items-center justify-center rounded-md",
+                "border border-line bg-paper px-4 transition-colors",
+                "hover:border-brand sm:w-36",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
               )}
             >
-              {brand.name}
+              <Image
+                src={brand.logo}
+                alt={brand.name}
+                width={200}
+                height={48}
+                // SVGs are vector already; the optimizer would only re-encode
+                // them, and Next declines to process SVG by default anyway.
+                unoptimized
+                className={cn(
+                  "h-auto w-full opacity-60 grayscale transition duration-200",
+                  "group-hover:opacity-100 group-hover:grayscale-0"
+                )}
+              />
             </Link>
           </li>
         ))}
