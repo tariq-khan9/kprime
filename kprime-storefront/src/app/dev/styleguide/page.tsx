@@ -1,3 +1,20 @@
+import type { ReactNode } from "react"
+
+import { Badge } from "@/components/ui/Badge"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { Select } from "@/components/ui/Select"
+import { Skeleton } from "@/components/ui/Skeleton"
+
+import {
+  AccordionDemo,
+  CheckboxDemo,
+  DrawerDemo,
+  ModalDemo,
+  RadioGroupDemo,
+  ToastDemo,
+} from "./demos"
+
 /**
  * Component workbench.
  *
@@ -54,7 +71,150 @@ const SHARED: SectionSpec[] = [
   { id: "product-rail", name: "ProductRail", task: 37, note: "10 products, snap scroll" },
 ]
 
+/** A row of examples with a label, so states are comparable side by side. */
+function Demo({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-muted">{label}</span>
+      <div className="flex flex-wrap items-center gap-3">{children}</div>
+    </div>
+  )
+}
+
+const VARIANTS = ["primary", "secondary", "ghost"] as const
+
+/**
+ * Live instances, keyed by section id. Each Block C task adds one entry; a
+ * section with no entry still renders its "not built yet" placeholder.
+ */
+const DEMOS: Partial<Record<string, ReactNode>> = {
+  button: (
+    <div className="flex flex-col gap-6">
+      {VARIANTS.map((variant) => (
+        <Demo key={variant} label={variant}>
+          <Button variant={variant}>Default</Button>
+          {/* Hover has no static state; forced here so it is comparable. */}
+          <Button variant={variant} className="bg-action-hover">
+            Hover
+          </Button>
+          <Button variant={variant} disabled>
+            Disabled
+          </Button>
+          <Button variant={variant} loading>
+            Loading
+          </Button>
+        </Demo>
+      ))}
+
+      <Demo label="sizes">
+        <Button size="sm">Small</Button>
+        <Button size="md">Medium</Button>
+        <Button size="lg">Large</Button>
+      </Demo>
+
+      <Demo label="asChild — renders an <a>, not a button inside a link">
+        <Button asChild>
+          <a href="/dev/products">Go to products</a>
+        </Button>
+      </Demo>
+    </div>
+  ),
+
+  input: (
+    <div className="flex max-w-sm flex-col gap-4">
+      <Input label="Full name" placeholder="Ahmed Khan" />
+      <Input
+        label="Phone"
+        type="tel"
+        inputMode="tel"
+        placeholder="0300 1234567"
+        hint="We call to confirm every order."
+      />
+      <Input
+        label="Phone"
+        defaultValue="0300"
+        error="That number is too short."
+      />
+      <Input label="Email" placeholder="Optional" disabled />
+    </div>
+  ),
+
+  select: (
+    <div className="flex max-w-sm flex-col gap-4">
+      <Select
+        label="Province"
+        placeholder="Choose a province"
+        defaultValue=""
+        options={[
+          { value: "kp", label: "Khyber Pakhtunkhwa" },
+          { value: "pb", label: "Punjab" },
+          { value: "sd", label: "Sindh" },
+          { value: "ba", label: "Balochistan" },
+          { value: "is", label: "Islamabad Capital Territory" },
+        ]}
+      />
+      <Select
+        label="City"
+        error="Select a province first."
+        options={[{ value: "peshawar", label: "Peshawar" }]}
+      />
+      <Select
+        label="City"
+        disabled
+        options={[{ value: "peshawar", label: "Peshawar" }]}
+      />
+    </div>
+  ),
+
+  checkbox: <CheckboxDemo />,
+  "radio-group": <RadioGroupDemo />,
+
+  badge: (
+    <div className="flex flex-col gap-4">
+      <Demo label="variants">
+        <Badge variant="sale">20% off</Badge>
+        <Badge variant="success">In stock</Badge>
+        <Badge variant="neutral">Imported</Badge>
+      </Demo>
+      <Demo label="on a card, against a price">
+        <div className="flex items-center gap-3 rounded-md border border-line p-3">
+          <span className="text-lg font-bold">Rs 2,200</span>
+          <span className="text-muted line-through">Rs 2,750</span>
+          <Badge variant="sale">Save Rs 550</Badge>
+        </div>
+      </Demo>
+    </div>
+  ),
+
+  skeleton: (
+    <div className="flex flex-col gap-4">
+      <Demo label="text lines">
+        <div className="flex w-full max-w-sm flex-col gap-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+      </Demo>
+      <Demo label="card — same dimensions as a real ProductCard">
+        <div className="flex w-40 flex-col gap-2">
+          <Skeleton className="aspect-square w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-5 w-1/2" />
+        </div>
+      </Demo>
+    </div>
+  ),
+
+  drawer: <DrawerDemo />,
+  modal: <ModalDemo />,
+  toast: <ToastDemo />,
+  accordion: <AccordionDemo />,
+}
+
 function Section({ spec }: { spec: SectionSpec }) {
+  const demo = DEMOS[spec.id]
+
   return (
     <section id={spec.id} className="scroll-mt-6">
       <div className="mb-3 flex flex-wrap items-baseline gap-x-3">
@@ -62,9 +222,14 @@ function Section({ spec }: { spec: SectionSpec }) {
         <span className="text-muted">task {spec.task}</span>
       </div>
 
-      {/* Replaced with a live instance by that task's session. */}
-      <div className="rounded-lg border border-dashed border-line bg-paper p-6 text-muted">
-        Not built yet — {spec.note}
+      <div
+        className={
+          demo
+            ? "rounded-lg border border-line bg-paper p-6"
+            : "rounded-lg border border-dashed border-line bg-paper p-6 text-muted"
+        }
+      >
+        {demo ?? <>Not built yet — {spec.note}</>}
       </div>
     </section>
   )
