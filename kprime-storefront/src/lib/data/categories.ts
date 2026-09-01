@@ -27,6 +27,12 @@ async function fetchCategoryTree(): Promise<CategoryNode[]> {
     limit: 1000,
   })
 
+  // Only reached on a cache miss. The nav renders on every page, so this line
+  // appearing on each request means the cache below is not working.
+  console.info(
+    `[categories] fetched ${product_categories.length} from backend at ${new Date().toISOString()}`
+  )
+
   const byId = new Map<string, CategoryNode>()
 
   for (const category of product_categories) {
