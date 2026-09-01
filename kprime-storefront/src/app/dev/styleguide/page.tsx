@@ -217,7 +217,7 @@ function buildDemos(
       </Demo>
       <Demo label="card — same dimensions as a real ProductCard">
         <div className="flex w-40 flex-col gap-2">
-          <Skeleton className="aspect-square w-full" />
+          <Skeleton className="aspect-[3/4] w-full" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-2/3" />
           <Skeleton className="h-5 w-1/2" />

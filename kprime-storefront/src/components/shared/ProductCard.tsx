@@ -4,6 +4,7 @@ import Link from "next/link"
 import { PriceDisplay } from "@/components/shared/PriceDisplay"
 import { StarRating } from "@/components/shared/StarRating"
 import { Badge } from "@/components/ui/Badge"
+import { Skeleton } from "@/components/ui/Skeleton"
 import type { ProductSummary } from "@/lib/data/products"
 import { cn } from "@/lib/utils/format"
 
@@ -55,7 +56,14 @@ export function ProductCard({
       {/* Square, fixed. Supplier photography arrives at wildly mixed sizes and
           has to composite cleanly on cream; a fixed ratio is also what keeps
           the grid from reflowing as images load. */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-md border border-line bg-paper">
+      {/* data-card-image is read by ProductRail, which centres its overlay
+          arrows on the image rather than on the whole card. Measured rather
+          than assumed, so changing this aspect ratio moves the arrows with
+          it. */}
+      <div
+        data-card-image
+        className="relative aspect-[3/4] w-full overflow-hidden rounded-md border border-line bg-paper"
+      >
         {product.thumbnail ? (
           <Image
             src={product.thumbnail}
@@ -101,5 +109,32 @@ export function ProductCard({
         size="card"
       />
     </Link>
+  )
+}
+
+/**
+ * ProductCard's loading placeholder.
+ *
+ * Lives beside the card deliberately: it mirrors the structure above element
+ * for element, and the two must change together. It previously existed twice —
+ * once in ProductGrid and once in HomeSkeleton — and the copies drifted, the
+ * second losing the title block, the rating line and the reserved compare-at
+ * row. That made home-page skeletons ~52px shorter than the cards replacing
+ * them, which is the layout shift a skeleton exists to prevent.
+ */
+export function ProductCardSkeleton() {
+  return (
+    <div className="flex flex-col gap-2">
+      <Skeleton className="aspect-[3/4] w-full" />
+      {/* Matches the title's two reserved lines. */}
+      <div className="flex min-h-[2.5rem] flex-col gap-1">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-2/3" />
+      </div>
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-5 w-20" />
+      {/* Matches PriceDisplay's reserved compare-at line. */}
+      <Skeleton className="h-4 w-28 opacity-0" />
+    </div>
   )
 }
