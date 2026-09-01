@@ -55,3 +55,12 @@ body {
   background-color: var(--color-cream);
   color: var(--color-brand);
 }
+
+/*
+ * Height of the sticky mobile buy bar (task 92), which exists only on the
+ * product page. WhatsAppFloatButton offsets itself by this so the two never
+ * stack; everywhere else it is zero and the button sits at the normal inset.
+ */
+:root {
+  --buy-bar-height: 0px;
+}

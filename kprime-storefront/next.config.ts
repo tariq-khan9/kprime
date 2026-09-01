@@ -15,6 +15,17 @@ const backendUrl = new URL(
 
 const nextConfig: NextConfig = {
   images: {
+    /**
+     * Next 16 refuses to optimize an image whose host resolves to a private IP,
+     * as SSRF protection. In development the Medusa backend is localhost, which
+     * resolves to 127.0.0.1, so every product image 400s with
+     * "url parameter is not allowed" — remotePatterns matching correctly makes
+     * no difference.
+     *
+     * Enabled for development only. In production the backend is a real public
+     * domain and this guard is worth having, so it must stay off there.
+     */
+    dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production",
     remotePatterns: [
       {
         protocol: backendUrl.protocol.replace(":", "") as "http" | "https",

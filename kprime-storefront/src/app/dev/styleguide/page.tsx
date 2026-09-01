@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
 
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
+import { Container } from "@/components/layout/Container"
 import { PriceDisplay } from "@/components/shared/PriceDisplay"
 import { ProductCard } from "@/components/shared/ProductCard"
 import { ProductGrid } from "@/components/shared/ProductGrid"
@@ -75,6 +77,15 @@ const SHARED: SectionSpec[] = [
   { id: "product-card", name: "ProductCard", task: 35, note: "6 real products, 3 breakpoints" },
   { id: "product-grid", name: "ProductGrid", task: 36, note: "12 products + skeleton state" },
   { id: "product-rail", name: "ProductRail", task: 37, note: "10 products, snap scroll" },
+]
+
+/**
+ * Only the two layout components that fit inside a max-w-4xl page. The rest of
+ * the shell — header, nav, footer — is full-bleed and lives at /dev/layout.
+ */
+const LAYOUT: SectionSpec[] = [
+  { id: "container", name: "Container", task: 38, note: "gutters at 3 breakpoints" },
+  { id: "breadcrumbs", name: "Breadcrumbs", task: 39, note: "4-level trail, truncates on mobile" },
 ]
 
 /** A row of examples with a label, so states are comparable side by side. */
@@ -374,6 +385,56 @@ function buildDemos(
       </Demo>
     </div>
   ),
+
+  container: (
+    <div className="flex flex-col gap-4">
+      <p className="text-muted">
+        px-4 at 360px, px-6 from 640px, px-8 from 1024px, capped at max-w-7xl.
+        Resize to see the gutters change.
+      </p>
+      <div className="-mx-6 bg-brand/5">
+        <Container>
+          <div className="border-x border-dashed border-line bg-paper py-4 text-center">
+            Container content — the dashed edges are the gutters
+          </div>
+        </Container>
+      </div>
+    </div>
+  ),
+
+  breadcrumbs: (
+    <div className="flex flex-col gap-6">
+      <Demo label="4 levels — full width">
+        <div className="w-full">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Electronics", href: "/categories/electronics" },
+              { label: "Computer Accessories", href: "/categories/computer-accessories" },
+              { label: "Mechanical Keyboard TKL" },
+            ]}
+          />
+        </div>
+      </Demo>
+
+      <Demo label="360px — middle collapses to an ellipsis, stays one line">
+        <div className="w-[360px] max-w-full overflow-hidden rounded-md border border-dashed border-line p-3">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Electronics", href: "/categories/electronics" },
+              { label: "Computer Accessories", href: "/categories/computer-accessories" },
+              { label: "A Very Long Product Name That Would Otherwise Wrap" },
+            ]}
+          />
+        </div>
+      </Demo>
+
+      <Demo label="single crumb">
+        <Breadcrumbs items={[{ label: "Search results" }]} />
+      </Demo>
+    </div>
+  ),
   }
 }
 
@@ -484,6 +545,10 @@ export default async function StyleguidePage() {
             <h2 className="mb-2 font-bold">Shared</h2>
             <JumpNav specs={SHARED} />
           </div>
+          <div className="border-t border-line pt-3">
+            <h2 className="mb-2 font-bold">Layout</h2>
+            <JumpNav specs={LAYOUT} />
+          </div>
         </nav>
 
         <div className="flex flex-col gap-8">
@@ -496,6 +561,17 @@ export default async function StyleguidePage() {
         <div className="flex flex-col gap-8">
           <h2 className="text-xl font-bold">Shared — components/shared</h2>
           {SHARED.map((spec) => (
+            <Section key={spec.id} spec={spec} demos={demos} />
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-8">
+          <h2 className="text-xl font-bold">Layout — components/layout</h2>
+          <p className="-mt-6 text-muted">
+            The full-bleed shell (header, nav, footer) is at{" "}
+            <a href="/dev/layout" className="underline">/dev/layout</a>.
+          </p>
+          {LAYOUT.map((spec) => (
             <Section key={spec.id} spec={spec} demos={demos} />
           ))}
         </div>

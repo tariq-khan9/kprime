@@ -1,6 +1,21 @@
+# The storefront is deliberately NOT a workspace package.
+#
+# The backend runs React 18 (Medusa's admin dashboard pins ^18.3.1) and the
+# storefront runs React 19 (required by Next 16). Sharing one tree under
+# `node-linker=hoisted` — which Medusa needs — silently breaks the admin:
+# @medusajs/dashboard depends on @radix-ui/react-dialog -> react-remove-scroll,
+# and once the storefront pulled in its own Radix, pnpm resolved two variants of
+# react-remove-scroll@2.7.2 differing only by peer React. Hoisting cannot nest
+# same-version variants, so one directory wins. The React 19 copy won, and every
+# admin dialog started throwing "Objects are not valid as a React child" —
+# React 18's reconciler rejecting React 19 elements.
+#
+# The storefront therefore installs its own node_modules and lockfile:
+#   cd kprime-storefront && pnpm install
+#
+# Do not add it back here. The two React majors cannot share a flat tree.
 packages:
   - kprime-backend
-  - kprime-storefront
 
 # pnpm 10 blocks dependency lifecycle scripts unless they are named here.
 # These six all need theirs: @swc/core and esbuild place native binaries that
