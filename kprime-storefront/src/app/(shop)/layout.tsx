@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer"
 import { Header } from "@/components/layout/Header"
 import { TrustStrip } from "@/components/layout/TrustStrip"
 import { WhatsAppFloatButton } from "@/components/layout/WhatsAppFloatButton"
+import { ToastProvider } from "@/components/ui/Toast"
 import { getCategoryTree } from "@/lib/data/categories"
 
 /**
@@ -23,9 +24,13 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
   const tree = await getCategoryTree()
 
   return (
-    <div className="flex min-h-screen flex-col bg-cream">
-      <AnnouncementBar />
-      <Header tree={tree} />
+    // ToastProvider wraps the shell so any page below can fire one — the
+    // newsletter form today, add-to-cart in task 94. Children stay server
+    // components; only the provider itself is client.
+    <ToastProvider>
+      <div className="flex min-h-screen flex-col bg-cream">
+        <AnnouncementBar />
+        <Header tree={tree} />
 
       {/*
         Deliberately NOT wrapped in Container.
@@ -37,11 +42,12 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
         instead, which is why AnnouncementBar and TrustStrip constrain their own
         text rather than relying on an outer wrapper.
       */}
-      <main className="flex-1">{children}</main>
+        <main className="flex-1">{children}</main>
 
-      <TrustStrip />
-      <Footer tree={tree} />
-      <WhatsAppFloatButton />
-    </div>
+        <TrustStrip />
+        <Footer tree={tree} />
+        <WhatsAppFloatButton />
+      </div>
+    </ToastProvider>
   )
 }

@@ -269,3 +269,39 @@ export const getProduct = unstable_cache(
   ["product"],
   { tags: ["products"] }
 )
+
+/**
+ * Product tag values mapped to their ids.
+ *
+ * `searchProducts` filters on `tag_id`, but the rest of the app thinks in tag
+ * values — the home page asks for "New Arrival", not `ptag_01ABC`. Fetched once
+ * and cached: there are a handful of tags and they change about never, so
+ * resolving this per request would be a round trip for nothing.
+ */
+const getTagMap = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    // The SDK exposes no `store.productTag` resource, so the endpoint is called
+    // directly. `fields` is trimmed because the default response embeds every
+    // product under each tag — the full catalogue, four times over, to read
+    // four ids.
+    const { product_tags } = await sdk.client.fetch<{
+      product_tags: { id: string; value: string }[]
+    }>("/store/product-tags", {
+      query: { limit: 100, fields: "id,value" },
+    })
+
+    return Object.fromEntries(product_tags.map((tag) => [tag.value, tag.id]))
+  },
+  ["product-tags"],
+  { tags: ["products"] }
+)
+
+/**
+ * Ids for the given tag values. Unknown values are dropped rather than throwing
+ * — a rail whose tag was renamed in admin should render empty, not 500 the
+ * whole home page.
+ */
+export async function getTagIdsByValue(values: string[]): Promise<string[]> {
+  const map = await getTagMap()
+  return values.map((value) => map[value]).filter(Boolean)
+}

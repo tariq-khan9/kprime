@@ -57,3 +57,89 @@ export const POLICY_LINKS = [
 ] as const
 
 export const HELP_LINKS = [{ label: "Track your order", href: "/track" }] as const
+
+/* ------------------------------------------------------------------ *
+ * Home page content
+ *
+ * PLACEHOLDER. Copy is honest — it promises nothing the store cannot do —
+ * but the wording and artwork are drafts. Swapping these out is the whole
+ * of the "real content" job; no component needs editing.
+ * ------------------------------------------------------------------ */
+
+export type HeroSlide = {
+  heading: string
+  subheading: string
+  ctaLabel: string
+  ctaHref: string
+  /** Tailwind gradient classes, standing in until real photography exists. */
+  gradient: string
+}
+
+export const HERO_SLIDES: HeroSlide[] = [
+  {
+    heading: "Cash on delivery, nationwide",
+    subheading: "Pay when your order reaches you. No card, no advance.",
+    ctaLabel: "Start shopping",
+    ctaHref: "/categories/electronics",
+    gradient: "from-brand to-brand-light",
+  },
+  {
+    heading: "Electronics that last",
+    subheading: "Chargers, audio and accessories with a warranty.",
+    ctaLabel: "Browse electronics",
+    ctaHref: "/categories/electronics",
+    gradient: "from-brand-light to-brand",
+  },
+  {
+    heading: "For the home",
+    subheading: "Kitchenware and bedding, delivered in 2–5 days.",
+    ctaLabel: "Browse home",
+    ctaHref: "/categories/home-and-bedding",
+    gradient: "from-brand to-action-ink",
+  },
+]
+
+export type PromoBanner = {
+  heading: string
+  subheading: string
+  href: string
+  gradient: string
+}
+
+export const PROMO_BANNERS: [PromoBanner, PromoBanner] = [
+  {
+    heading: "Kitchen essentials",
+    subheading: "Cookware, appliances and storage",
+    href: "/categories/kitchenware",
+    gradient: "from-sale/80 to-sale",
+  },
+  {
+    heading: "Everyday cosmetics",
+    subheading: "Skincare, makeup and fragrances",
+    href: "/categories/cosmetics",
+    gradient: "from-brand-light to-brand",
+  },
+]
+
+/**
+ * PLACEHOLDER brand names.
+ *
+ * The catalogue records no manufacturer — the product tags are attributes
+ * (Imported, Bestseller), not brands. Rendered as text lockups rather than
+ * invented logo images, so nobody mistakes them for real branding.
+ *
+ * `href` points at a category until task 57 introduces the `?brand=` param.
+ */
+export type Brand = { name: string; href: string }
+
+// Annotated rather than `as const`: the literal tuple type would make
+// BrandStrip's empty-list guard a compile error, since TypeScript would know
+// the length is exactly 6.
+export const BRANDS: Brand[] = [
+  { name: "Anker", href: "/categories/mobile-accessories" },
+  { name: "Baseus", href: "/categories/mobile-accessories" },
+  { name: "JBL", href: "/categories/audio" },
+  { name: "Logitech", href: "/categories/computer-accessories" },
+  { name: "Philips", href: "/categories/kitchen-appliances" },
+  { name: "Prestige", href: "/categories/cookware" },
+]
