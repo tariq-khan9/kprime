@@ -1,10 +1,14 @@
 import type { ReactNode } from "react"
 
+import { PriceDisplay } from "@/components/shared/PriceDisplay"
+import { ProductCard } from "@/components/shared/ProductCard"
+import { StarRating } from "@/components/shared/StarRating"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Select } from "@/components/ui/Select"
 import { Skeleton } from "@/components/ui/Skeleton"
+import { searchProducts, type ProductSummary } from "@/lib/data/products"
 
 import {
   AccordionDemo,
@@ -87,7 +91,10 @@ const VARIANTS = ["primary", "secondary", "ghost"] as const
  * Live instances, keyed by section id. Each Block C task adds one entry; a
  * section with no entry still renders its "not built yet" placeholder.
  */
-const DEMOS: Partial<Record<string, ReactNode>> = {
+function buildDemos(
+  products: ProductSummary[]
+): Partial<Record<string, ReactNode>> {
+  return {
   button: (
     <div className="flex flex-col gap-6">
       {VARIANTS.map((variant) => (
@@ -210,10 +217,120 @@ const DEMOS: Partial<Record<string, ReactNode>> = {
   modal: <ModalDemo />,
   toast: <ToastDemo />,
   accordion: <AccordionDemo />,
+
+  "price-display": (
+    <div className="flex flex-col gap-6">
+      {(["card", "detail", "line"] as const).map((size) => (
+        <Demo key={size} label={size}>
+          <div className="rounded-md border border-line p-3">
+            <PriceDisplay price={2200} size={size} />
+          </div>
+          <div className="rounded-md border border-line p-3">
+            <PriceDisplay price={2200} originalPrice={2750} size={size} />
+          </div>
+        </Demo>
+      ))}
+      <Demo label="null price">
+        <div className="rounded-md border border-line p-3">
+          <PriceDisplay price={null} />
+        </div>
+      </Demo>
+      <p className="text-muted">
+        Both boxes in each row are the same height — the compare-at line is
+        reserved whether or not there is a discount.
+      </p>
+    </div>
+  ),
+
+  "star-rating": (
+    <div className="flex flex-col gap-6">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <Demo key={size} label={size}>
+          {[0, 2.5, 4.7, 5].map((v) => (
+            <span key={v} className="flex items-center gap-2">
+              <StarRating value={v} size={size} />
+              <span className="text-muted">{v}</span>
+            </span>
+          ))}
+        </Demo>
+      ))}
+      <Demo label="with count">
+        <StarRating value={4.5} count={128} />
+      </Demo>
+      <Demo label="null — renders nothing, not zero stars">
+        <span className="rounded-md border border-dashed border-line px-3 py-1">
+          <StarRating value={null} />
+        </span>
+      </Demo>
+    </div>
+  ),
+
+  "product-card": (
+    <div className="flex flex-col gap-6">
+      <p className="text-muted">
+        {products.length} real products. None have photography yet, so every
+        card shows the placeholder — that is the current state of the
+        catalogue, not a broken image.
+      </p>
+
+      <Demo label="360px — two per row">
+        <div className="w-[360px] rounded-md border border-dashed border-line p-3">
+          <div className="grid grid-cols-2 gap-3">
+            {products.slice(0, 4).map((p, i) => (
+              <ProductCard key={p.id} product={p} priority={i < 2} />
+            ))}
+          </div>
+        </div>
+      </Demo>
+
+      <Demo label="768px — three per row">
+        <div className="w-[768px] max-w-full rounded-md border border-dashed border-line p-3">
+          <div className="grid grid-cols-3 gap-4">
+            {products.slice(0, 6).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      </Demo>
+
+      <Demo label="with a discount and a rating — simulated, no data yet">
+        <div className="w-[360px] rounded-md border border-dashed border-line p-3">
+          <div className="grid grid-cols-2 gap-3">
+            {products.slice(0, 2).map((p, i) => (
+              <ProductCard
+                key={p.id}
+                product={
+                  i === 0
+                    ? {
+                        ...p,
+                        originalPrice: p.price ? Math.round(p.price * 1.3) : null,
+                      }
+                    : p
+                }
+                rating={i === 0 ? 4.5 : undefined}
+                reviewCount={i === 0 ? 23 : undefined}
+              />
+            ))}
+          </div>
+        </div>
+      </Demo>
+      <p className="text-muted">
+        Left card has a badge and stars, right card has neither — both are the
+        same height, and the undiscounted one has no empty badge gap.
+      </p>
+    </div>
+  ),
+  }
 }
 
-function Section({ spec }: { spec: SectionSpec }) {
-  const demo = DEMOS[spec.id]
+function Section({
+  spec,
+  demos,
+}: {
+  spec: SectionSpec
+  demos: Partial<Record<string, ReactNode>>
+}) {
+  const demo = demos[spec.id]
 
   return (
     <section id={spec.id} className="scroll-mt-6">
@@ -247,7 +364,12 @@ function JumpNav({ specs }: { specs: SectionSpec[] }) {
   )
 }
 
-export default function StyleguidePage() {
+export default async function StyleguidePage() {
+  // Real catalogue rather than fixtures: ProductCard's whole job is surviving
+  // the titles, prices and missing images the actual data has.
+  const { products } = await searchProducts({ pageSize: 6 })
+  const demos = buildDemos(products)
+
   return (
     <main className="min-h-screen bg-cream px-6 py-12 text-brand">
       <div className="mx-auto flex max-w-4xl flex-col gap-10">
@@ -313,14 +435,14 @@ export default function StyleguidePage() {
         <div className="flex flex-col gap-8">
           <h2 className="text-xl font-bold">Primitives — components/ui</h2>
           {PRIMITIVES.map((spec) => (
-            <Section key={spec.id} spec={spec} />
+            <Section key={spec.id} spec={spec} demos={demos} />
           ))}
         </div>
 
         <div className="flex flex-col gap-8">
           <h2 className="text-xl font-bold">Shared — components/shared</h2>
           {SHARED.map((spec) => (
-            <Section key={spec.id} spec={spec} />
+            <Section key={spec.id} spec={spec} demos={demos} />
           ))}
         </div>
       </div>
