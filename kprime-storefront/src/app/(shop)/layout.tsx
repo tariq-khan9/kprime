@@ -1,10 +1,47 @@
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar"
+import { Footer } from "@/components/layout/Footer"
+import { Header } from "@/components/layout/Header"
+import { TrustStrip } from "@/components/layout/TrustStrip"
+import { WhatsAppFloatButton } from "@/components/layout/WhatsAppFloatButton"
+import { getCategoryTree } from "@/lib/data/categories"
+
 /**
- * The shop shell — pages 1–6 and 8–15.
+ * The shop shell — every page except checkout, which is deliberately stripped.
  *
- * Empty until the layout components land (§6.1 step 26): AnnouncementBar,
- * Header (mega menu, search, cart), MobileNav, Container, Footer and
- * WhatsAppFloatButton wrap around `children` here.
+ * The parentheses mean `(shop)` never appears in a URL: a page at
+ * `app/(shop)/cart/page.tsx` serves `/cart`.
+ *
+ * The tree is fetched once here rather than in each page. It is cached, so this
+ * costs one backend call for the whole app, and both Header and Footer read the
+ * same data — a page cannot accidentally render navigation that disagrees with
+ * the footer.
+ *
+ * MobileNav is not listed separately: it lives inside Header, which owns the
+ * breakpoint decision about which navigation is showing.
  */
-export default function ShopLayout({ children }: LayoutProps<"/">) {
-  return <>{children}</>
+export default async function ShopLayout({ children }: LayoutProps<"/">) {
+  const tree = await getCategoryTree()
+
+  return (
+    <div className="flex min-h-screen flex-col bg-cream">
+      <AnnouncementBar />
+      <Header tree={tree} />
+
+      {/*
+        Deliberately NOT wrapped in Container.
+
+        The build sequence has full-bleed sections inside the main column — the
+        hero carousel (task 50), promo banners, and rails that must run to the
+        viewport edge on mobile. A Container here would force every one of them
+        to escape with negative margins. Pages apply Container per section
+        instead, which is why AnnouncementBar and TrustStrip constrain their own
+        text rather than relying on an outer wrapper.
+      */}
+      <main className="flex-1">{children}</main>
+
+      <TrustStrip />
+      <Footer tree={tree} />
+      <WhatsAppFloatButton />
+    </div>
+  )
 }
