@@ -2,6 +2,8 @@ import type { ReactNode } from "react"
 
 import { PriceDisplay } from "@/components/shared/PriceDisplay"
 import { ProductCard } from "@/components/shared/ProductCard"
+import { ProductGrid } from "@/components/shared/ProductGrid"
+import { ProductRail } from "@/components/shared/ProductRail"
 import { StarRating } from "@/components/shared/StarRating"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -320,6 +322,58 @@ function buildDemos(
       </p>
     </div>
   ),
+
+  "product-grid": (
+    <div className="flex flex-col gap-6">
+      <p className="text-muted">
+        Resize the window: 2 columns below 640px, 3 to 1024px, 4 above.
+      </p>
+
+      <Demo label="live — fills the available width">
+        <div className="w-full">
+          <ProductGrid products={products} />
+        </div>
+      </Demo>
+
+      <Demo label="360px — two per row">
+        <div className="w-[360px] max-w-full rounded-md border border-dashed border-line p-3">
+          <div className="grid grid-cols-2 gap-3">
+            {products.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      </Demo>
+
+      <Demo label="loading — same dimensions, nothing shifts">
+        <div className="w-full">
+          <ProductGrid products={[]} loading skeletonCount={8} />
+        </div>
+      </Demo>
+    </div>
+  ),
+
+  "product-rail": (
+    <div className="flex flex-col gap-6">
+      <ProductRail
+        title="New In"
+        products={products}
+        viewAllHref="/dev/products"
+      />
+
+      <p className="text-muted">
+        Scroll by touch, or by the arrows — which appear only at 640px and up.
+        Part of the next card stays visible on purpose: on a phone that is what
+        signals there is more to the right.
+      </p>
+
+      <Demo label="360px — inside a phone-width container">
+        <div className="w-[360px] max-w-full overflow-hidden rounded-md border border-dashed border-line p-3">
+          <ProductRail title="Best Sellers" products={products.slice(0, 8)} />
+        </div>
+      </Demo>
+    </div>
+  ),
   }
 }
 
@@ -367,7 +421,7 @@ function JumpNav({ specs }: { specs: SectionSpec[] }) {
 export default async function StyleguidePage() {
   // Real catalogue rather than fixtures: ProductCard's whole job is surviving
   // the titles, prices and missing images the actual data has.
-  const { products } = await searchProducts({ pageSize: 6 })
+  const { products } = await searchProducts({ pageSize: 12 })
   const demos = buildDemos(products)
 
   return (
