@@ -486,7 +486,7 @@ export default async function StyleguidePage() {
   const demos = buildDemos(products)
 
   return (
-    <main className="min-h-screen bg-cream px-6 py-12 text-brand">
+    <main className="min-h-screen bg-paper px-6 py-12 text-brand">
       <div className="mx-auto flex max-w-4xl flex-col gap-10">
         <div>
           <h1 className="text-2xl font-bold">Styleguide</h1>

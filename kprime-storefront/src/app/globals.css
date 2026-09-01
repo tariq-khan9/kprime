@@ -27,6 +27,14 @@
   --color-action-hover: #d98906;
   --color-action-ink: #1a1408;
 
+  /* Header surface — amber washed almost to white.
+     NOT a CTA colour and never used as one. Amber at full strength means "act
+     on this"; a full-strength amber header would sit above every Add to Cart
+     and an amber button on it measures 1.00:1 — no separation at all. At this
+     dilution a solid amber button still reads as the one thing to click.
+     Navy text on it is 14.7:1. */
+  --color-header: #fdf1da;
+
   --color-sale: #c2410c;
   --color-success: #15803d;
   --color-muted: #6b7280;
@@ -52,7 +60,9 @@
  * prefers-color-scheme block.
  */
 body {
-  background-color: var(--color-cream);
+  /* White page. `cream` is now the tint used for panels that need to lift off
+     the page — the inverse of the original cream-page/white-card pairing. */
+  background-color: var(--color-paper);
   color: var(--color-brand);
 }
 

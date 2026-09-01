@@ -111,7 +111,7 @@ export function SearchBar({ className }: { className?: string }) {
 
       {/* Mobile overlay. Covers the header row so the field gets full width. */}
       {expanded && (
-        <div className="absolute inset-x-0 top-0 z-50 flex h-14 items-center gap-2 bg-paper px-4 lg:hidden">
+        <div className="absolute inset-x-0 top-0 z-50 flex h-14 items-center gap-2 bg-header px-4 lg:hidden">
           {field}
           <button
             type="button"

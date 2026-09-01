@@ -27,17 +27,22 @@ export function Logo({ variant = "default", compact = false, className }: LogoPr
       aria-label={SITE.name}
       className={cn(
         "flex shrink-0 flex-col leading-none",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
-        "focus-visible:ring-offset-2 focus-visible:ring-offset-cream",
+        "focus-visible:outline-none focus-visible:ring-2",
+        variant === "reversed"
+          ? "focus-visible:ring-cream focus-visible:ring-offset-brand"
+          : "focus-visible:ring-brand focus-visible:ring-offset-cream",
+        "focus-visible:ring-offset-2",
         ink,
         className
       )}
     >
+      {/* The 1:3 cap-height ratio is what makes this read as one lockup rather
+          than two stacked words, so both lines step up together. */}
       <span
         aria-hidden
         className={cn(
           "font-medium",
-          compact ? "text-[0.5rem]" : "text-[0.5rem] sm:text-[0.6rem]"
+          compact ? "text-[0.6rem]" : "text-[0.6rem] sm:text-[0.72rem]"
         )}
         style={{ letterSpacing: "0.35em" }}
       >
@@ -47,7 +52,7 @@ export function Logo({ variant = "default", compact = false, className }: LogoPr
         aria-hidden
         className={cn(
           "font-bold tracking-tight",
-          compact ? "text-lg" : "text-lg sm:text-2xl"
+          compact ? "text-xl" : "text-xl sm:text-3xl"
         )}
       >
         {SITE.logo.bottom}

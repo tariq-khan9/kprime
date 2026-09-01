@@ -85,7 +85,7 @@ export function NewsletterSignup({ className }: { className?: string }) {
   return (
     <section
       aria-labelledby="newsletter"
-      className={cn("w-full rounded-lg bg-paper p-6 sm:p-8", className)}
+      className={cn("w-full rounded-lg bg-cream p-6 sm:p-8", className)}
     >
       <div className="mx-auto max-w-xl text-center">
         <h2 id="newsletter" className="text-lg font-bold sm:text-xl">
