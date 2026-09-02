@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer"
 import { Header } from "@/components/layout/Header"
 import { TrustStrip } from "@/components/layout/TrustStrip"
 import { WhatsAppFloatButton } from "@/components/layout/WhatsAppFloatButton"
+import { CartDrawer } from "@/components/page/cart/CartDrawer"
 import { ToastProvider } from "@/components/ui/Toast"
 import { getCategoryTree } from "@/lib/data/categories"
 
@@ -48,6 +49,10 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
         <Footer tree={tree} />
         <WhatsAppFloatButton />
       </div>
+          {/* Mounted once for the whole shop: any add-to-cart below can open
+          it, wherever it sits. */}
+      <CartDrawer />
+
     </ToastProvider>
   )
 }
