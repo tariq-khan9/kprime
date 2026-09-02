@@ -349,3 +349,55 @@ export async function ensurePaymentSession(
     return fail(error, "Could not prepare your order for placement.")
   }
 }
+
+export type PlaceOrderResult =
+  | { ok: true; orderId: string }
+  | { ok: false; errors: CheckoutError[] }
+
+/**
+ * Completes the cart into an order.
+ *
+ * **Double submission cannot create two orders.** Medusa returns the same order
+ * for an already-completed cart rather than making another — verified against
+ * the live API. The button guards the click as well, but the guarantee lives
+ * here, where a lost connection and a retry land too.
+ *
+ * **A failure leaves the cart intact.** Medusa answers `type: "invalid_data"`
+ * with a reason and does not destroy the cart, so the shopper can fix whatever
+ * went wrong and try again. The cookie is only dropped once an order exists —
+ * clearing it optimistically would strand someone with an empty cart and no
+ * order to show for it.
+ */
+export async function completeOrder(cartId: string): Promise<PlaceOrderResult> {
+  try {
+    const response = await sdk.client.fetch<{
+      type: string
+      order?: { id: string }
+      error?: { message?: string }
+      message?: string
+    }>(`/store/carts/${cartId}/complete`, { method: "POST" })
+
+    if (response.type === "order" && response.order?.id) {
+      return { ok: true, orderId: response.order.id }
+    }
+
+    const message =
+      response.error?.message ??
+      response.message ??
+      "We could not place your order. Please try again."
+
+    return { ok: false, errors: [{ message }] }
+  } catch (error) {
+    return {
+      ok: false,
+      errors: [
+        {
+          message:
+            error instanceof Error
+              ? error.message
+              : "We could not place your order. Please try again.",
+        },
+      ],
+    }
+  }
+}

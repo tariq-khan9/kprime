@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache"
 
-import { getCartId } from "@/lib/data/cart"
+import { clearCartId, getCartId } from "@/lib/data/cart"
 import {
+  completeOrder,
   ensurePaymentSession,
   saveAddress,
   saveContact,
@@ -11,6 +12,7 @@ import {
   type AddressDetails,
   type CheckoutResult,
   type ContactDetails,
+  type PlaceOrderResult,
 } from "@/lib/data/checkout"
 
 /**
@@ -95,4 +97,30 @@ export async function ensurePaymentSessionAction(): Promise<CheckoutResult> {
   }
 
   return ensurePaymentSession(cartId)
+}
+
+/**
+ * Places the order.
+ *
+ * The cart cookie is dropped only after an order exists, so a failure leaves
+ * the shopper with their cart and a message rather than nothing at all.
+ */
+export async function placeOrderAction(): Promise<PlaceOrderResult> {
+  const cartId = await getCartId()
+
+  if (!cartId) {
+    return {
+      ok: false,
+      errors: [{ message: "Your cart has expired. Add an item and try again." }],
+    }
+  }
+
+  const result = await completeOrder(cartId)
+
+  if (result.ok) {
+    await clearCartId()
+    revalidatePath("/cart")
+  }
+
+  return result
 }
