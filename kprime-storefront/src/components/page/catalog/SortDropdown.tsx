@@ -6,13 +6,24 @@ import { Select } from "@/components/ui/Select"
 import type { ProductSort } from "@/lib/data/products"
 import { buildHref, parseFilters, setSort } from "@/lib/filters/url-state"
 
+type Option = { value: ProductSort; label: string }
+
 /** "Highest Rated" is added in task 136, once ratings exist. */
-const OPTIONS: { value: ProductSort; label: string }[] = [
+const OPTIONS: Option[] = [
   { value: "newest", label: "Newest" },
   { value: "price_asc", label: "Price: low to high" },
   { value: "price_desc", label: "Price: high to low" },
   { value: "title", label: "Name" },
 ]
+
+/**
+ * Relevance is offered only when a query is active — it is the default there,
+ * and listing it on a category page would show an option that cannot order
+ * anything.
+ */
+function optionsFor(q: string | null): Option[] {
+  return q ? [{ value: "relevance", label: "Relevance" }, ...OPTIONS] : OPTIONS
+}
 
 /**
  * Sort control.
@@ -32,7 +43,7 @@ export function SortDropdown({ className }: { className?: string }) {
   return (
     <Select
       label="Sort by"
-      options={OPTIONS}
+      options={optionsFor(state.q)}
       value={state.sort}
       onChange={(event) =>
         router.push(

@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 import { EmptyState } from "@/components/shared/EmptyState"
+import type { Relaxation } from "@/lib/filters/relaxations"
 import { Button } from "@/components/ui/Button"
 import {
   buildHref,
@@ -11,13 +12,6 @@ import {
   parseFilters,
   setPrice,
 } from "@/lib/filters/url-state"
-
-/**
- * One filter that could be dropped, and what that would return.
- *
- * `group` is a facet key, or `"price"` for the range.
- */
-export type Relaxation = { group: string; label: string; count: number }
 
 export type EmptyResultsProps = {
   /**

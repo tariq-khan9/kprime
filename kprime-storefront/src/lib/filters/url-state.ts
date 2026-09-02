@@ -18,8 +18,30 @@ import type { ProductSort } from "@/lib/data/products"
  */
 export const RESERVED_KEYS = ["price", "sort", "page", "q"] as const
 
-const SORTS: ProductSort[] = ["newest", "price_asc", "price_desc", "title"]
+const SORTS: ProductSort[] = [
+  "relevance",
+  "newest",
+  "price_asc",
+  "price_desc",
+  "title",
+]
+
+/** The default when no `sort` is in the URL. Browsing listings use this. */
 export const DEFAULT_SORT: ProductSort = "newest"
+
+/**
+ * Default sort for a given query.
+ *
+ * Relevance only makes sense when there is something to be relevant to, so a
+ * category listing keeps `newest` while `/search?q=mouse` orders by how well
+ * each title answers the query. Both `parseFilters` and `serialiseFilters` read
+ * this, which is what keeps the round-trip symmetric: the default is omitted
+ * from the URL, so `/search?q=mouse` stays clean and picking Newest there
+ * writes `sort=newest` explicitly.
+ */
+export function defaultSortFor(q: string | null): ProductSort {
+  return q ? "relevance" : DEFAULT_SORT
+}
 
 export type PriceRange = { min?: number; max?: number }
 
@@ -129,16 +151,22 @@ export function parseFilters(params: RawSearchParams): FilterState {
 
   const rawSort = readParam(params, "sort")
   const rawPage = Number(readParam(params, "page"))
+  const q = readParam(params, "q") || null
+
+  // Relevance without a query is not a state the dropdown can display, so a
+  // hand-edited ?sort=relevance on a category page falls back like any unknown
+  // value rather than leaving the control blank.
+  const known =
+    SORTS.includes(rawSort as ProductSort) &&
+    !(rawSort === "relevance" && !q)
 
   return {
     groups,
     price: parsePrice(readParam(params, "price")),
     // An unknown sort falls back rather than throwing.
-    sort: SORTS.includes(rawSort as ProductSort)
-      ? (rawSort as ProductSort)
-      : DEFAULT_SORT,
+    sort: known ? (rawSort as ProductSort) : defaultSortFor(q),
     page: Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1,
-    q: readParam(params, "q") || null,
+    q,
   }
 }
 
@@ -170,7 +198,7 @@ export function serialiseFilters(state: FilterState): string {
     params.set("price", `${min ?? ""}-${max ?? ""}`)
   }
 
-  if (state.sort !== DEFAULT_SORT) {
+  if (state.sort !== defaultSortFor(state.q)) {
     params.set("sort", state.sort)
   }
 

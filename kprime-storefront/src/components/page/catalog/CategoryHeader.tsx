@@ -1,10 +1,24 @@
 import Link from "next/link"
 
-import type { CategoryNode } from "@/lib/data/categories"
 import { cn } from "@/lib/utils/format"
 
+/**
+ * The structural minimum this header renders.
+ *
+ * Deliberately not `CategoryNode`. A collection has a title and nothing else —
+ * no description, no children — and typing this to the node would force the
+ * collection page to fabricate empty `id`, `rank` and `parent_category_id`
+ * fields just to satisfy a shape it does not have. `CategoryNode` already
+ * satisfies this, so the category page passes one unchanged.
+ */
+export type CategoryHeaderCategory = {
+  name: string
+  description?: string | null
+  children?: { id: string; name: string; handle: string }[]
+}
+
 export type CategoryHeaderProps = {
-  category: CategoryNode
+  category: CategoryHeaderCategory
   count: number
   className?: string
 }
@@ -28,7 +42,7 @@ export function CategoryHeader({
         <p className="max-w-2xl text-muted">{category.description}</p>
       )}
 
-      {category.children.length > 0 && (
+      {(category.children?.length ?? 0) > 0 && (
         <nav aria-label="Subcategories" className="mt-1">
           {/* Scrolls rather than wraps on a phone: four chips wrapping to three
               rows pushes the grid below the fold. */}
@@ -39,7 +53,7 @@ export function CategoryHeader({
               "sm:flex-wrap sm:overflow-visible sm:pb-0"
             )}
           >
-            {category.children.map((child) => (
+            {category.children?.map((child) => (
               <li key={child.id} className="shrink-0">
                 <Link
                   href={`/categories/${child.handle}`}

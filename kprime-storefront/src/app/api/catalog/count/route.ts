@@ -8,6 +8,7 @@ import { parseFilters } from "@/lib/filters/url-state"
  * How many products a filter combination would return.
  *
  *   GET /api/catalog/count?handle=electronics&colour=black,white&price=0-5000
+ *   GET /api/catalog/count?q=keyboard&colour=black
  *
  * Exists for the mobile filter drawer, which stages selections and shows the
  * result count before Apply. That count cannot be computed in the browser:
@@ -22,27 +23,31 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const handle = url.searchParams.get("handle")
 
-  if (!handle) {
-    return NextResponse.json({ error: "handle is required" }, { status: 400 })
+  // Scoped by category, by query, or neither. `q` is what makes this usable
+  // from /search, which has no handle to scope by.
+  let categoryIds: string[] | undefined
+
+  if (handle) {
+    categoryIds = await getDescendantIds(handle)
+
+    // An unknown handle has no descendants — answer 0 rather than falling
+    // through to an unscoped query, which would return the whole catalogue.
+    if (categoryIds.length === 0) {
+      return NextResponse.json({ count: 0 })
+    }
   }
 
-  const categoryIds = await getDescendantIds(handle)
-
-  // An unknown handle has no descendants — answer 0 rather than the whole
-  // catalogue, which is what an unfiltered query would return.
-  if (categoryIds.length === 0) {
-    return NextResponse.json({ count: 0 })
-  }
-
-  // `handle` is ours, not a facet. Everything else parses exactly as the page
-  // does, so the staged count and the applied result cannot disagree.
+  // `handle` is ours, not a facet. `q` is parsed by parseFilters like any
+  // other reserved key, so the staged count and the applied result cannot
+  // disagree.
   const params = new URLSearchParams(url.searchParams)
   params.delete("handle")
 
   const filters = parseFilters(params)
 
   const { count } = await searchProducts({
-    categoryIds,
+    ...(categoryIds ? { categoryIds } : {}),
+    ...(filters.q ? { q: filters.q } : {}),
     facets: filters.groups,
     minPrice: filters.price?.min,
     maxPrice: filters.price?.max,

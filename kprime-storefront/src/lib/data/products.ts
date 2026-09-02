@@ -60,7 +60,81 @@ export type ProductSummary = {
   options: { title: string; values: { id: string; value: string }[] }[]
 }
 
-export type ProductSort = "newest" | "price_asc" | "price_desc" | "title"
+/**
+ * Most images a product shows.
+ *
+ * Enforced here rather than trusted from admin: the gallery, the thumbnail
+ * strip and the mobile dots are all sized for a handful, and a product uploaded
+ * with twenty would quietly produce a twenty-dot swiper. A product may carry
+ * as few as one.
+ */
+export const MAX_PRODUCT_IMAGES = 5
+
+/** One gallery image. Ordered as the merchant arranged them in admin. */
+export type ProductImage = {
+  id: string
+  url: string
+}
+
+/**
+ * A buyable variant.
+ *
+ * `optionValues` maps option id → the value this variant carries, which is what
+ * the selector in task 86 resolves a chosen combination against.
+ */
+export type ProductVariantDetail = {
+  id: string
+  title: string
+  sku: string | null
+  price: number | null
+  originalPrice: number | null
+  currencyCode: string
+  /** Null when Medusa is not tracking stock for this variant. */
+  inventoryQuantity: number | null
+  manageInventory: boolean
+  allowBackorder: boolean
+  optionValues: Record<string, string>
+}
+
+export type ProductOptionDetail = {
+  id: string
+  title: string
+  values: { id: string; value: string }[]
+}
+
+/**
+ * Everything the detail page needs, projected off Medusa's raw shape.
+ *
+ * Deliberately typed rather than passed through raw: every component from task
+ * 82 onward reads this, and letting Medusa's loosely-typed product spread
+ * through them would put `any` in a dozen files.
+ */
+export type ProductDetail = {
+  id: string
+  title: string
+  handle: string
+  subtitle: string | null
+  description: string | null
+  thumbnail: string | null
+  images: ProductImage[]
+  options: ProductOptionDetail[]
+  variants: ProductVariantDetail[]
+  tags: string[]
+  type: string | null
+  categories: { id: string; name: string; handle: string }[]
+  metadata: Record<string, unknown> | null
+  /** Cheapest variant, for the headline price before one is selected. */
+  price: number | null
+  originalPrice: number | null
+  currencyCode: string
+}
+
+export type ProductSort =
+  | "relevance"
+  | "newest"
+  | "price_asc"
+  | "price_desc"
+  | "title"
 
 export type SearchProductsParams = {
   categoryIds?: string[]
@@ -284,6 +358,70 @@ const cachedNativeSet = unstable_cache(fetchNativeSet, ["products"], {
 })
 
 /**
+ * Query split into lowercase tokens.
+ *
+ * Medusa's `q` is token-based and order-independent — verified live: `mouse
+ * wireless` matches "Silent Wireless Mouse", as does `silent mouse`. Any filter
+ * layered on top has to tokenise the same way, or every multi-word query that
+ * works today would start returning nothing.
+ */
+function tokenise(q: string): string[] {
+  return q.toLowerCase().split(/\s+/).filter(Boolean)
+}
+
+/** Escaped so a query like `c++` or `(` builds a regex instead of throwing. */
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+/**
+ * Keeps only products whose TITLE carries every token.
+ *
+ * Medusa's `q` also matches description, variant title and SKU, which pulls in
+ * products a shopper would not recognise as results: `mouse` returns a keyboard
+ * whose description mentions "desk space for the mouse", and `case` returns
+ * earbuds and a bedsheet with no phone case anywhere in the catalogue.
+ *
+ * The recall is deliberately given up. Description and SKU matches — `KBD-RED`,
+ * `hot-swappable` — no longer resolve; those are staff queries, not shopper
+ * ones.
+ */
+function filterByTitle(products: ProductSummary[], q: string): ProductSummary[] {
+  const tokens = tokenise(q)
+
+  if (!tokens.length) {
+    return products
+  }
+
+  return products.filter((product) => {
+    const title = product.title.toLowerCase()
+    return tokens.every((token) => title.includes(token))
+  })
+}
+
+/**
+ * How well a title answers the query. Higher sorts first.
+ *
+ * Everything reaching this has already passed `filterByTitle`, so every token is
+ * present somewhere and 0 is the floor rather than "no match".
+ */
+function relevanceOf(title: string, q: string): number {
+  const lower = title.toLowerCase()
+  const needle = q.trim().toLowerCase()
+
+  if (lower === needle) return 3
+  if (lower.startsWith(needle)) return 2
+
+  // A token opening a word beats one buried mid-word: "Pan" should rank ahead of
+  // a title that merely contains those letters inside a longer word.
+  const onWordBoundary = tokenise(q).every((token) =>
+    new RegExp(`\\b${escapeRegex(token)}`).test(lower)
+  )
+
+  return onWordBoundary ? 1 : 0
+}
+
+/**
  * The one entry point for every product listing — category, search and
  * collection pages all come through here (§2.1).
  *
@@ -295,7 +433,12 @@ export async function searchProducts(
 ): Promise<SearchProductsResult> {
   // Only the native part is cached on. Everything below runs per request
   // against the same cached array.
-  const all = await cachedNativeSet(nativeQueryOf(params))
+  const fetched = await cachedNativeSet(nativeQueryOf(params))
+
+  // Applied here, before ANYTHING is derived. Filtering after `priceBounds` or
+  // `deriveFacets` would offer a slider range and facet values belonging to
+  // products that are no longer in the result set.
+  const all = params.q?.trim() ? filterByTitle(fetched, params.q) : fetched
 
   // Bounds from the UNFILTERED set — deriving them from the filtered one would
   // let the slider shrink its own range on every drag, with no way back.
@@ -323,6 +466,11 @@ export async function searchProducts(
     return (a.price - b.price) * dir
   }
 
+  const query = params.q?.trim() ?? ""
+
+  const byNewest = (a: ProductSummary, b: ProductSummary) =>
+    b.createdAt.localeCompare(a.createdAt)
+
   const compare: Record<
     ProductSort,
     (a: ProductSummary, b: ProductSummary) => number
@@ -330,10 +478,19 @@ export async function searchProducts(
     price_asc: (a, b) => byPrice(a, b, 1),
     price_desc: (a, b) => byPrice(a, b, -1),
     title: (a, b) => a.title.localeCompare(b.title),
-    newest: (a, b) => b.createdAt.localeCompare(a.createdAt),
+    newest: byNewest,
+    // Ties fall through to newest, so equally relevant products still get a
+    // meaningful order rather than an alphabetical accident.
+    relevance: (a, b) =>
+      relevanceOf(b.title, query) - relevanceOf(a.title, query) || byNewest(a, b),
   }
 
-  const primary = compare[params.sort ?? "newest"] ?? compare.newest
+  // Relevance is the default only when there is something to be relevant to; a
+  // category listing has no query and stays on newest.
+  const requested = params.sort ?? (query ? "relevance" : "newest")
+  const effective = requested === "relevance" && !query ? "newest" : requested
+
+  const primary = compare[effective] ?? byNewest
 
   // Every comparison falls back to id. Without a tiebreak, products with equal
   // prices (or timestamps from the same seed run) can order differently between
@@ -358,24 +515,200 @@ export async function searchProducts(
   }
 }
 
-/** Full product for the detail page. Not trimmed — the page needs everything. */
+/**
+ * Medusa's raw product shape, narrowed to the fields the projections below read.
+ *
+ * The SDK types these loosely, so declaring what is actually consumed is what
+ * keeps `any` out of the projection — and makes it obvious which fields the
+ * `fields` string above has to keep returning.
+ */
+type RawPrice = {
+  calculated_amount?: number | null
+  original_amount?: number | null
+  currency_code?: string | null
+}
+
+type RawVariant = {
+  id: string
+  title?: string | null
+  sku?: string | null
+  calculated_price?: RawPrice | null
+  inventory_quantity?: number | null
+  manage_inventory?: boolean | null
+  allow_backorder?: boolean | null
+  options?: { option_id?: string; value?: string }[] | null
+}
+
+type RawProduct = {
+  id: string
+  title: string
+  handle: string
+  subtitle?: string | null
+  description?: string | null
+  thumbnail?: string | null
+  images?: { id: string; url: string }[] | null
+  options?:
+    | { id: string; title: string; values?: { id: string; value: string }[] | null }[]
+    | null
+  variants?: RawVariant[] | null
+  tags?: { value?: string }[] | null
+  type?: { value?: string } | null
+  categories?: { id: string; name: string; handle: string }[] | null
+  metadata?: Record<string, unknown> | null
+}
+
+function toVariantDetail(variant: RawVariant): ProductVariantDetail {
+  const price = variant.calculated_price ?? null
+  const calculated = price?.calculated_amount ?? null
+  const original = price?.original_amount ?? null
+
+  return {
+    id: variant.id,
+    title: variant.title ?? "",
+    sku: variant.sku ?? null,
+    price: calculated,
+    // Same rule as the card: Medusa returns original == calculated when nothing
+    // is on sale, and a strikethrough at the same price is a lie.
+    originalPrice:
+      original !== null && calculated !== null && original > calculated
+        ? original
+        : null,
+    currencyCode: price?.currency_code ?? "pkr",
+    inventoryQuantity: variant.inventory_quantity ?? null,
+    manageInventory: variant.manage_inventory ?? false,
+    allowBackorder: variant.allow_backorder ?? false,
+    optionValues: Object.fromEntries(
+      (variant.options ?? [])
+        .filter((option) => option.option_id && option.value !== undefined)
+        .map((option) => [option.option_id as string, option.value as string])
+    ),
+  }
+}
+
+function toDetail(product: RawProduct): ProductDetail {
+  const variants: ProductVariantDetail[] = (product.variants ?? []).map(
+    toVariantDetail
+  )
+
+  // The headline price before a variant is chosen, so it matches the "from"
+  // figure the card showed on the way in.
+  const priced = variants.filter((variant) => variant.price !== null)
+
+  const cheapest = priced.reduce<ProductVariantDetail | null>(
+    (low, variant) =>
+      low === null || (variant.price ?? 0) < (low.price ?? 0) ? variant : low,
+    null
+  )
+
+  return {
+    id: product.id,
+    title: product.title,
+    handle: product.handle,
+    subtitle: product.subtitle ?? null,
+    description: product.description ?? null,
+    thumbnail: product.thumbnail ?? null,
+    // Capped, and ordered as admin arranged them, so the extras that get
+    // dropped are the last ones rather than an arbitrary subset.
+    images: (product.images ?? []).slice(0, MAX_PRODUCT_IMAGES).map((image) => ({
+      id: image.id,
+      url: image.url,
+    })),
+    options: (product.options ?? []).map((option) => ({
+      id: option.id,
+      title: option.title,
+      values: (option.values ?? []).map((value) => ({
+        id: value.id,
+        value: value.value,
+      })),
+    })),
+    variants,
+    tags: (product.tags ?? [])
+      .map((tag) => tag.value)
+      .filter((value): value is string => Boolean(value)),
+    type: product.type?.value ?? null,
+    categories: (product.categories ?? []).map((category) => ({
+      id: category.id,
+      name: category.name,
+      handle: category.handle,
+    })),
+    metadata: product.metadata ?? null,
+    price: cheapest?.price ?? null,
+    originalPrice: cheapest?.originalPrice ?? null,
+    currencyCode: cheapest?.currencyCode ?? "pkr",
+  }
+}
+
+/**
+ * Full product for the detail page. Not trimmed — the page needs everything.
+ *
+ * Returns null for an unknown handle rather than throwing, so the page can turn
+ * that into a real `notFound()`.
+ */
 export const getProduct = unstable_cache(
-  async (handle: string) => {
+  async (handle: string): Promise<ProductDetail | null> => {
     const regionId = await getRegionId()
 
     const { products } = await sdk.store.product.list({
       handle,
       limit: 1,
-      fields:
-        "*variants.calculated_price,*variants.options,*options.values,*images,*tags,*type,*categories",
+      /**
+       * EVERY field is named, including the top-level scalars.
+       *
+       * Medusa's field selection is all-or-nothing: naming a single explicit
+       * field (here `variants.inventory_quantity`) switches the whole query out
+       * of its defaults, and `title`, `handle`, `description`, `subtitle`,
+       * `thumbnail` and `metadata` all silently vanish from the response. The
+       * failure is quiet — the page renders with an empty <h1> and no
+       * description tab rather than erroring — so this list must stay complete.
+       *
+       * The three inventory fields are the reason any of this is explicit: the
+       * `*variants` wildcard does NOT include them, and without them every
+       * variant looks stockless and StockIndicator can never say "in stock".
+       */
+      fields: [
+        "id",
+        "title",
+        "handle",
+        "subtitle",
+        "description",
+        "thumbnail",
+        "metadata",
+        "*variants.calculated_price",
+        "*variants.options",
+        "variants.id",
+        "variants.title",
+        "variants.sku",
+        "variants.inventory_quantity",
+        "variants.manage_inventory",
+        "variants.allow_backorder",
+        "options.id",
+        "options.title",
+        "*options.values",
+        "*images",
+        "*tags",
+        "*type",
+        "*categories",
+      ].join(","),
       ...(regionId ? { region_id: regionId } : {}),
     })
 
-    return products[0] ?? null
+    return products[0] ? toDetail(products[0] as RawProduct) : null
   },
   ["product"],
   { tags: ["products"] }
 )
+
+/**
+ * Every product handle, for `generateStaticParams`.
+ *
+ * Reuses the cached catalogue rather than a second query, so prerendering costs
+ * nothing beyond the one fetch the listings already pay for.
+ */
+export async function getProductHandles(): Promise<string[]> {
+  const { products } = await searchProducts({ pageSize: MAX_SET })
+
+  return products.map((product) => product.handle)
+}
 
 /**
  * Product tag values mapped to their ids.

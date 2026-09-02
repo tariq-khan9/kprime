@@ -52,8 +52,13 @@ function FilterIcon() {
 
 export type FilterDrawerProps = {
   facets: Facet[]
-  /** Category handle — the count endpoint needs it to scope the query. */
-  handle: string
+  /**
+   * What the listing is scoped to. A category page passes `handle`, /search
+   * passes `q` — the count endpoint needs whichever applies, or its staged
+   * count would be over the whole catalogue.
+   */
+  handle?: string
+  q?: string
   className?: string
 }
 
@@ -69,7 +74,12 @@ export type FilterDrawerProps = {
  * computed here: rule 4 forbids shipping the catalogue to the browser, and the
  * per-value facet counts are not per-combination.
  */
-export function FilterDrawer({ facets, handle, className }: FilterDrawerProps) {
+export function FilterDrawer({
+  facets,
+  handle,
+  q,
+  className,
+}: FilterDrawerProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -106,7 +116,15 @@ export function FilterDrawer({ facets, handle, className }: FilterDrawerProps) {
     const controller = new AbortController()
 
     timer.current = setTimeout(async () => {
-      const params = new URLSearchParams({ handle })
+      const params = new URLSearchParams()
+
+      if (handle) {
+        params.set("handle", handle)
+      }
+
+      if (q) {
+        params.set("q", q)
+      }
 
       for (const [key, values] of Object.entries(staged)) {
         if (values.length) {
@@ -139,7 +157,7 @@ export function FilterDrawer({ facets, handle, className }: FilterDrawerProps) {
       if (timer.current) clearTimeout(timer.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, staged, handle, state.price?.min, state.price?.max])
+  }, [open, staged, handle, q, state.price?.min, state.price?.max])
 
   const toggle = (group: string, value: string) => {
     // The previous count is stale the instant a box is tapped. Clearing it here
