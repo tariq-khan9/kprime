@@ -639,8 +639,44 @@ export const getProduct = unstable_cache(
     const { products } = await sdk.store.product.list({
       handle,
       limit: 1,
-      fields:
-        "*variants.calculated_price,*variants.options,*options.values,*images,*tags,*type,*categories",
+      /**
+       * EVERY field is named, including the top-level scalars.
+       *
+       * Medusa's field selection is all-or-nothing: naming a single explicit
+       * field (here `variants.inventory_quantity`) switches the whole query out
+       * of its defaults, and `title`, `handle`, `description`, `subtitle`,
+       * `thumbnail` and `metadata` all silently vanish from the response. The
+       * failure is quiet — the page renders with an empty <h1> and no
+       * description tab rather than erroring — so this list must stay complete.
+       *
+       * The three inventory fields are the reason any of this is explicit: the
+       * `*variants` wildcard does NOT include them, and without them every
+       * variant looks stockless and StockIndicator can never say "in stock".
+       */
+      fields: [
+        "id",
+        "title",
+        "handle",
+        "subtitle",
+        "description",
+        "thumbnail",
+        "metadata",
+        "*variants.calculated_price",
+        "*variants.options",
+        "variants.id",
+        "variants.title",
+        "variants.sku",
+        "variants.inventory_quantity",
+        "variants.manage_inventory",
+        "variants.allow_backorder",
+        "options.id",
+        "options.title",
+        "*options.values",
+        "*images",
+        "*tags",
+        "*type",
+        "*categories",
+      ].join(","),
       ...(regionId ? { region_id: regionId } : {}),
     })
 
