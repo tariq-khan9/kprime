@@ -60,7 +60,12 @@ export type ProductSummary = {
   options: { title: string; values: { id: string; value: string }[] }[]
 }
 
-export type ProductSort = "newest" | "price_asc" | "price_desc" | "title"
+export type ProductSort =
+  | "relevance"
+  | "newest"
+  | "price_asc"
+  | "price_desc"
+  | "title"
 
 export type SearchProductsParams = {
   categoryIds?: string[]
@@ -284,6 +289,70 @@ const cachedNativeSet = unstable_cache(fetchNativeSet, ["products"], {
 })
 
 /**
+ * Query split into lowercase tokens.
+ *
+ * Medusa's `q` is token-based and order-independent — verified live: `mouse
+ * wireless` matches "Silent Wireless Mouse", as does `silent mouse`. Any filter
+ * layered on top has to tokenise the same way, or every multi-word query that
+ * works today would start returning nothing.
+ */
+function tokenise(q: string): string[] {
+  return q.toLowerCase().split(/\s+/).filter(Boolean)
+}
+
+/** Escaped so a query like `c++` or `(` builds a regex instead of throwing. */
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+/**
+ * Keeps only products whose TITLE carries every token.
+ *
+ * Medusa's `q` also matches description, variant title and SKU, which pulls in
+ * products a shopper would not recognise as results: `mouse` returns a keyboard
+ * whose description mentions "desk space for the mouse", and `case` returns
+ * earbuds and a bedsheet with no phone case anywhere in the catalogue.
+ *
+ * The recall is deliberately given up. Description and SKU matches — `KBD-RED`,
+ * `hot-swappable` — no longer resolve; those are staff queries, not shopper
+ * ones.
+ */
+function filterByTitle(products: ProductSummary[], q: string): ProductSummary[] {
+  const tokens = tokenise(q)
+
+  if (!tokens.length) {
+    return products
+  }
+
+  return products.filter((product) => {
+    const title = product.title.toLowerCase()
+    return tokens.every((token) => title.includes(token))
+  })
+}
+
+/**
+ * How well a title answers the query. Higher sorts first.
+ *
+ * Everything reaching this has already passed `filterByTitle`, so every token is
+ * present somewhere and 0 is the floor rather than "no match".
+ */
+function relevanceOf(title: string, q: string): number {
+  const lower = title.toLowerCase()
+  const needle = q.trim().toLowerCase()
+
+  if (lower === needle) return 3
+  if (lower.startsWith(needle)) return 2
+
+  // A token opening a word beats one buried mid-word: "Pan" should rank ahead of
+  // a title that merely contains those letters inside a longer word.
+  const onWordBoundary = tokenise(q).every((token) =>
+    new RegExp(`\\b${escapeRegex(token)}`).test(lower)
+  )
+
+  return onWordBoundary ? 1 : 0
+}
+
+/**
  * The one entry point for every product listing — category, search and
  * collection pages all come through here (§2.1).
  *
@@ -295,7 +364,12 @@ export async function searchProducts(
 ): Promise<SearchProductsResult> {
   // Only the native part is cached on. Everything below runs per request
   // against the same cached array.
-  const all = await cachedNativeSet(nativeQueryOf(params))
+  const fetched = await cachedNativeSet(nativeQueryOf(params))
+
+  // Applied here, before ANYTHING is derived. Filtering after `priceBounds` or
+  // `deriveFacets` would offer a slider range and facet values belonging to
+  // products that are no longer in the result set.
+  const all = params.q?.trim() ? filterByTitle(fetched, params.q) : fetched
 
   // Bounds from the UNFILTERED set — deriving them from the filtered one would
   // let the slider shrink its own range on every drag, with no way back.
@@ -323,6 +397,11 @@ export async function searchProducts(
     return (a.price - b.price) * dir
   }
 
+  const query = params.q?.trim() ?? ""
+
+  const byNewest = (a: ProductSummary, b: ProductSummary) =>
+    b.createdAt.localeCompare(a.createdAt)
+
   const compare: Record<
     ProductSort,
     (a: ProductSummary, b: ProductSummary) => number
@@ -330,10 +409,19 @@ export async function searchProducts(
     price_asc: (a, b) => byPrice(a, b, 1),
     price_desc: (a, b) => byPrice(a, b, -1),
     title: (a, b) => a.title.localeCompare(b.title),
-    newest: (a, b) => b.createdAt.localeCompare(a.createdAt),
+    newest: byNewest,
+    // Ties fall through to newest, so equally relevant products still get a
+    // meaningful order rather than an alphabetical accident.
+    relevance: (a, b) =>
+      relevanceOf(b.title, query) - relevanceOf(a.title, query) || byNewest(a, b),
   }
 
-  const primary = compare[params.sort ?? "newest"] ?? compare.newest
+  // Relevance is the default only when there is something to be relevant to; a
+  // category listing has no query and stays on newest.
+  const requested = params.sort ?? (query ? "relevance" : "newest")
+  const effective = requested === "relevance" && !query ? "newest" : requested
+
+  const primary = compare[effective] ?? byNewest
 
   // Every comparison falls back to id. Without a tiebreak, products with equal
   // prices (or timestamps from the same seed run) can order differently between

@@ -7,6 +7,7 @@ import {
   clearAll,
   clearGroup,
   DEFAULT_SORT,
+  defaultSortFor,
   EMPTY_STATE,
   hasActiveFilters,
   parseFilters,
@@ -74,6 +75,44 @@ describe("parseFilters — malformed URLs must degrade, never throw", () => {
 
   it("falls back on an unknown sort", () => {
     expect(parseFilters(new URLSearchParams("sort=cheapest")).sort).toBe(DEFAULT_SORT)
+  })
+
+  it("defaults to relevance when a query is present", () => {
+    expect(parseFilters(new URLSearchParams("q=mouse")).sort).toBe("relevance")
+    expect(parseFilters(new URLSearchParams("")).sort).toBe("newest")
+  })
+
+  it("lets an explicit sort beat the query default", () => {
+    expect(parseFilters(new URLSearchParams("q=mouse&sort=price_asc")).sort).toBe(
+      "price_asc"
+    )
+  })
+
+  it("rejects relevance without a query", () => {
+    // Hand-edited URL. Relevance has nothing to rank against here, and the
+    // dropdown does not offer it, so it must not survive into state.
+    expect(parseFilters(new URLSearchParams("sort=relevance")).sort).toBe("newest")
+  })
+
+  it("omits the sort when it matches the query-dependent default", () => {
+    const searching = parseFilters(new URLSearchParams("q=mouse"))
+    expect(serialiseFilters(searching)).toBe("q=mouse")
+
+    // Choosing Newest on a search IS a departure from the default, so it has to
+    // be written or a reload would silently reorder the results.
+    expect(serialiseFilters(setSort(searching, "newest"))).toBe(
+      "q=mouse&sort=newest"
+    )
+  })
+
+  it("round-trips a search state through the URL", () => {
+    const state = parseFilters(new URLSearchParams("q=mouse&sort=title"))
+    expect(parseFilters(new URLSearchParams(serialiseFilters(state)))).toEqual(state)
+  })
+
+  it("defaultSortFor keys off the query", () => {
+    expect(defaultSortFor("mouse")).toBe("relevance")
+    expect(defaultSortFor(null)).toBe(DEFAULT_SORT)
   })
 
   it("clamps a bad page to 1", () => {
