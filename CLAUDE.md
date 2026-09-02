@@ -9,15 +9,26 @@ that don't change.
 Next.js App Router (RSC) · TypeScript · Tailwind · Medusa v2.19 backend (existing, separate repo)
 · `@medusajs/js-sdk`.
 
+Two separate installs — the backend runs React 18 and the storefront React 19, so they must not
+share a `node_modules`. The storefront is deliberately not a pnpm workspace package.
+
 ```
-npm run dev      # localhost:3000
+pnpm dev:backend    # localhost:9000, admin at /app
+pnpm dev:storefront # localhost:8000
+```
+
+From `kprime-storefront/`:
+
+```
 npm run build    # must pass before any commit
 npm run lint
+npm test         # vitest
 ```
 
 ## Hard rules
 
-1. **No inline hex, rgb, or `text-gray-*`.** Colours and spacing come from `tailwind.config.ts`.
+1. **No inline hex, rgb, or `text-gray-*`.** Colours come from the `@theme` block in
+   `src/app/globals.css` — Tailwind v4, there is no `tailwind.config.ts`.
    If you need a value that isn't there, stop and say so — a token is missing.
 2. **No `localStorage` or `sessionStorage`** except the cart ID and the checkout draft.
 3. **No component calls the Medusa SDK directly.** Everything fetches through `lib/data/*`.
@@ -31,13 +42,14 @@ npm run lint
 
 ## Design tokens
 
-Navy brand, amber action, red sale, green success, cream page. Every colour has exactly one job.
+Navy brand, amber action, red sale, green success, white page. Every colour has exactly one job.
 
 | Token | Hex | Job |
 |---|---|---|
-| `cream` | `#F6F4EF` | Page background |
-| `paper` | `#FFFFFF` | Cards, panels, modals |
-| `brand` | `#0F1E3D` | All text, headings, prices, header/footer, icons, active nav |
+| `paper` | `#FFFFFF` | Page background |
+| `cream` | `#F6F4EF` | Panels that lift off the page — trust strip, newsletter |
+| `header` | `#FDF1DA` | Header bar only. Amber washed to near-white — **not** a CTA colour |
+| `brand` | `#0F1E3D` | All text, headings, prices, footer, announcement bar, icons, active nav |
 | `brand.light` | `#1E3A6B` | Hover on navy surfaces |
 | `action` | `#F2A007` | Primary CTA only |
 | `action.hover` | `#D98906` | |
@@ -49,6 +61,8 @@ Navy brand, amber action, red sale, green success, cream page. Every colour has 
 
 1. **Navy replaces black for text.** Never `#000`, `#333`, `text-gray-900`.
 2. **Amber only ever means "act on this."** Buttons and nothing else, ~2% of the page.
+   The `header` token is the one exception and is diluted to near-white for exactly this reason:
+   a solid amber button on a full-strength amber bar measures 1.00:1 and disappears.
 3. **Dark text on amber, never white.** White on `#F2A007` is 2.1:1 and fails WCAG.
 4. **Green is success states only. Never a CTA.**
 5. **Sale red is never the brand colour.**
