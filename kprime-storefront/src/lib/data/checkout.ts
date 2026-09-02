@@ -313,3 +313,39 @@ export async function saveShippingMethod(
     return fail(error, "Could not save your delivery option.")
   }
 }
+
+/** The manual provider. Cash on delivery is settled by the courier, not online. */
+export const MANUAL_PAYMENT_PROVIDER = "pp_system_default"
+
+/**
+ * Creates the payment collection and its manual session.
+ *
+ * Safe to call more than once: Medusa returns the cart's existing collection
+ * rather than making a second one — verified against the live API — so a
+ * refresh on the review step cannot leave two collections behind.
+ *
+ * There is no card form and no provider choice. The only "payment method" is
+ * handing cash to the rider, and the session exists so Medusa has something to
+ * authorise when the cart completes.
+ */
+export async function ensurePaymentSession(
+  cartId: string
+): Promise<CheckoutResult> {
+  try {
+    const { payment_collection } = await sdk.client.fetch<{
+      payment_collection: { id: string }
+    }>("/store/payment-collections", {
+      method: "POST",
+      body: { cart_id: cartId },
+    })
+
+    await sdk.client.fetch(
+      `/store/payment-collections/${payment_collection.id}/payment-sessions`,
+      { method: "POST", body: { provider_id: MANUAL_PAYMENT_PROVIDER } }
+    )
+
+    return await readBack()
+  } catch (error) {
+    return fail(error, "Could not prepare your order for placement.")
+  }
+}
