@@ -1,5 +1,12 @@
 import { unstable_cache } from "next/cache"
 
+import {
+  deriveFacets,
+  filterByFacets,
+  type Facet,
+  type SelectedFacets,
+} from "@/lib/filters/facets"
+import { filterByPrice, priceBoundsOf } from "@/lib/filters/price"
 import { sdk } from "@/lib/sdk"
 
 /**
@@ -36,6 +43,15 @@ export type ProductSummary = {
   thumbnail: string | null
   /** Lowest calculated price across variants. Null when nothing is priced. */
   price: number | null
+  /**
+   * Cheapest and dearest variant. Equal when every variant shares a price.
+   *
+   * `price` alone is the "from" figure the card shows; this is what price
+   * filtering matches against, so a product with a Rs 9,000 variant is findable
+   * under a 5,000–10,000 filter rather than hidden behind its Rs 1,000 entry
+   * price.
+   */
+  priceRange: { min: number; max: number } | null
   /** Compare-at price for the same variant, when it is on sale. */
   originalPrice: number | null
   currencyCode: string
@@ -51,8 +67,15 @@ export type SearchProductsParams = {
   collectionIds?: string[]
   typeIds?: string[]
   tagIds?: string[]
-  /** Option value ids, the native colour/size/spec filter. */
-  optionValueIds?: string[]
+  /**
+   * Selected facet values by group key, e.g. `{ colour: ["black"] }`.
+   *
+   * Applied in server memory, not as a Medusa param. Verified against the live
+   * API: `option_value_id` is ANDed at the variant level, so the ids for Black
+   * and White ask for a variant that is both and return nothing. Facets need OR
+   * within a group, which the native filter cannot express.
+   */
+  facets?: SelectedFacets
   q?: string
   minPrice?: number
   maxPrice?: number
@@ -69,6 +92,8 @@ export type SearchProductsResult = {
   pageCount: number
   /** Min and max across the set before price filtering, for the range slider. */
   priceBounds: { min: number; max: number } | null
+  /** Groups above the coverage threshold, for the sidebar. */
+  facets: Facet[]
 }
 
 const DEFAULT_PAGE_SIZE = 24
@@ -113,12 +138,19 @@ function toSummary(product: Record<string, any>): ProductSummary {
 
   const original = cheapest?.original_amount ?? null
 
+  // The whole spread, not just the cheapest. Price filtering matches against
+  // this so a product whose dearest variant is in range stays findable.
+  const amounts: number[] = priced.map((price) => price.calculated_amount)
+
   return {
     id: product.id,
     title: product.title,
     handle: product.handle,
     thumbnail: product.thumbnail ?? null,
     price: cheapest?.calculated_amount ?? null,
+    priceRange: amounts.length
+      ? { min: Math.min(...amounts), max: Math.max(...amounts) }
+      : null,
     // Only a real discount counts — Medusa returns original == calculated when
     // nothing is on sale, and a strikethrough at the same price is a lie.
     originalPrice:
@@ -152,7 +184,6 @@ type NativeQuery = {
   collectionIds?: string[]
   typeIds?: string[]
   tagIds?: string[]
-  optionValueIds?: string[]
   q?: string
 }
 
@@ -170,7 +201,6 @@ function nativeQueryOf(params: SearchProductsParams): NativeQuery {
     collectionIds: ids(params.collectionIds),
     typeIds: ids(params.typeIds),
     tagIds: ids(params.tagIds),
-    optionValueIds: ids(params.optionValueIds),
     q: params.q || undefined,
   }
 }
@@ -205,9 +235,6 @@ async function fetchNativeSet(query: NativeQuery): Promise<ProductSummary[]> {
       : {}),
     ...(query.typeIds?.length ? { type_id: query.typeIds } : {}),
     ...(query.tagIds?.length ? { tag_id: query.tagIds } : {}),
-    ...(query.optionValueIds?.length
-      ? { option_value_id: query.optionValueIds }
-      : {}),
     ...(query.q ? { q: query.q } : {}),
   }
 
@@ -270,27 +297,24 @@ export async function searchProducts(
   // against the same cached array.
   const all = await cachedNativeSet(nativeQueryOf(params))
 
-  const pricedValues = all
-    .map((product) => product.price)
-    .filter((price): price is number => price !== null)
+  // Bounds from the UNFILTERED set — deriving them from the filtered one would
+  // let the slider shrink its own range on every drag, with no way back.
+  const priceBounds = priceBoundsOf(all)
 
-  const priceBounds = pricedValues.length
-    ? { min: Math.min(...pricedValues), max: Math.max(...pricedValues) }
-    : null
+  const priced = filterByPrice(all, {
+    min: params.minPrice,
+    max: params.maxPrice,
+  })
 
-  let matched = all
+  // Derived AFTER price filtering but BEFORE facet filtering.
+  //
+  // Deriving them after facet filtering would collapse the sidebar onto the
+  // current selection: tick Black and every other colour vanishes, leaving no
+  // way to widen the choice. Deriving them before price filtering would offer
+  // values that cannot produce a result.
+  const facets = deriveFacets(priced)
 
-  if (params.minPrice !== undefined) {
-    matched = matched.filter(
-      (p) => p.price !== null && p.price >= params.minPrice!
-    )
-  }
-
-  if (params.maxPrice !== undefined) {
-    matched = matched.filter(
-      (p) => p.price !== null && p.price <= params.maxPrice!
-    )
-  }
+  const matched = filterByFacets(priced, params.facets ?? {})
 
   // Unpriced products sort last rather than as free.
   const byPrice = (a: ProductSummary, b: ProductSummary, dir: 1 | -1) => {
@@ -330,6 +354,7 @@ export async function searchProducts(
     page,
     pageCount,
     priceBounds,
+    facets,
   }
 }
 

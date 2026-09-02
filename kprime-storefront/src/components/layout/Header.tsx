@@ -55,7 +55,7 @@ export function Header({ tree }: { tree: CategoryNode[] }) {
               area. */}
           <MobileNav tree={tree} className="-ml-2.5" />
 
-          <Logo compact={scrolled} className="lg:mr-6" />
+          <Logo compact={scrolled} priority className="lg:mr-6" />
 
           {/* Desktop: search takes the middle. Mobile: this collapses to an
               icon pushed right by ml-auto. */}

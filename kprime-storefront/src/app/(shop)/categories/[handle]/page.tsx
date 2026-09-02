@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
 import { Container } from "@/components/layout/Container"
+import { FilterSidebar } from "@/components/page/catalog/FilterSidebar"
 import { ProductGrid } from "@/components/shared/ProductGrid"
 import {
   getCategoryByHandle,
@@ -46,7 +47,7 @@ export default async function CategoryPage({
   // the busiest categories in the shop.
   const categoryIds = await getDescendantIds(handle)
 
-  const [trail, { products, count }] = await Promise.all([
+  const [trail, { products, count, facets, priceBounds }] = await Promise.all([
     getCategoryPath(handle),
     searchProducts({
       categoryIds,
@@ -54,6 +55,8 @@ export default async function CategoryPage({
       page: filters.page,
       minPrice: filters.price?.min,
       maxPrice: filters.price?.max,
+      // Every non-reserved URL param is a facet group — `?colour=black`.
+      facets: filters.groups,
     }),
   ])
 
@@ -78,22 +81,27 @@ export default async function CategoryPage({
         <p className="mt-2 max-w-2xl text-muted">{category.description}</p>
       )}
 
-      <p className="mt-1 text-muted">
-        {count} {count === 1 ? "product" : "products"}
-      </p>
+      {/* Sidebar and grid. The sidebar hides itself below lg — task 72 puts
+          the same groups in a bottom sheet for mobile. */}
+      <div className="mt-6 flex gap-8">
+        <FilterSidebar facets={facets} priceBounds={priceBounds} />
 
-      <div className="mt-6">
-        {products.length > 0 ? (
-          <ProductGrid products={products} />
-        ) : (
-          // Inline, not the EmptyState primitive — that is task 73, which also
-          // adds filter-relaxation suggestions. Half the categories are empty
-          // until task 10 imports a real catalogue, so a bare grid here would
-          // read as a broken page rather than an empty one.
-          <p className="rounded-lg border border-line bg-cream p-6 text-muted">
-            Nothing in this category yet.
+        <div className="min-w-0 flex-1">
+          <p className="mb-4 text-muted">
+            {count} {count === 1 ? "product" : "products"}
           </p>
-        )}
+
+          {products.length > 0 ? (
+            <ProductGrid products={products} />
+          ) : (
+            // Inline, not the EmptyState primitive — that is task 73, which
+            // also suggests which filter to drop and how many results that
+            // would return.
+            <p className="rounded-lg border border-line bg-cream p-6 text-muted">
+              No products match these filters.
+            </p>
+          )}
+        </div>
       </div>
     </Container>
   )
