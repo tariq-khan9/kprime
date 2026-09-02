@@ -60,6 +60,16 @@ export type ProductSummary = {
   options: { title: string; values: { id: string; value: string }[] }[]
 }
 
+/**
+ * Most images a product shows.
+ *
+ * Enforced here rather than trusted from admin: the gallery, the thumbnail
+ * strip and the mobile dots are all sized for a handful, and a product uploaded
+ * with twenty would quietly produce a twenty-dot swiper. A product may carry
+ * as few as one.
+ */
+export const MAX_PRODUCT_IMAGES = 5
+
 /** One gallery image. Ordered as the merchant arranged them in admin. */
 export type ProductImage = {
   id: string
@@ -597,7 +607,9 @@ function toDetail(product: RawProduct): ProductDetail {
     subtitle: product.subtitle ?? null,
     description: product.description ?? null,
     thumbnail: product.thumbnail ?? null,
-    images: (product.images ?? []).map((image) => ({
+    // Capped, and ordered as admin arranged them, so the extras that get
+    // dropped are the last ones rather than an arbitrary subset.
+    images: (product.images ?? []).slice(0, MAX_PRODUCT_IMAGES).map((image) => ({
       id: image.id,
       url: image.url,
     })),

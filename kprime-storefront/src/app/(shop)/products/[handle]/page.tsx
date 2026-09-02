@@ -79,7 +79,11 @@ export default async function ProductPage({
       />
 
       <div className="mt-4 flex flex-col gap-8 lg:flex-row lg:gap-10">
-        <div className="lg:w-1/2 lg:shrink-0">
+        {/* 2/5, not 1/2 — a half-width column at aspect-[3/4] renders roughly
+            800px tall on a 1280px screen, which pushes the buy area under the
+            fold. 20% narrower keeps the whole product visible beside it. Mobile
+            stays full-bleed: at 360px there is no width to give away. */}
+        <div className="lg:w-2/5 lg:shrink-0">
           {/* One gallery per breakpoint rather than one responsive component:
               hover zoom is meaningless on a touch screen, and snap-scrolling is
               the wrong interaction for a mouse. */}
