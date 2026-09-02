@@ -1,8 +1,17 @@
 import { notFound } from "next/navigation"
+import { Suspense } from "react"
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
 import { Container } from "@/components/layout/Container"
+import { ActiveFilterChips } from "@/components/page/catalog/ActiveFilterChips"
+import { CategoryHeader } from "@/components/page/catalog/CategoryHeader"
+import {
+  EmptyResults,
+  type Relaxation,
+} from "@/components/page/catalog/EmptyResults"
+import { FilterDrawer } from "@/components/page/catalog/FilterDrawer"
 import { FilterSidebar } from "@/components/page/catalog/FilterSidebar"
+import { PaginationControls } from "@/components/page/catalog/PaginationControls"
 import { ProductGrid } from "@/components/shared/ProductGrid"
 import {
   getCategoryByHandle,
@@ -10,7 +19,7 @@ import {
   getDescendantIds,
 } from "@/lib/data/categories"
 import { searchProducts } from "@/lib/data/products"
-import { parseFilters } from "@/lib/filters/url-state"
+import { parseFilters, type FilterState } from "@/lib/filters/url-state"
 
 /**
  * Category listing.
@@ -18,18 +27,64 @@ import { parseFilters } from "@/lib/filters/url-state"
  * Dynamic because it reads searchParams (§3) — filter state lives in the URL,
  * so this cannot be prerendered.
  *
- * The sidebar, sort control, chips and pagination UI arrive in tasks 64–74.
- * Their plumbing is already wired: parseFilters reads sort, page and price out
- * of the URL and passes them through, so `?sort=price_asc&page=2` works today
- * and those tasks only add controls.
+ * NOTE: there is deliberately NO `loading.tsx` in this segment. A loading file
+ * creates a Suspense boundary above the page, so Next streams and sends 200
+ * before the component runs — `notFound()` below could then never set a 404 and
+ * every unknown handle would be a soft 404. That bug already happened once,
+ * from `(shop)/loading.tsx`. Task 74's streaming is the <Suspense> around the
+ * grid instead, which sits AFTER the 404 check.
  */
 export const dynamic = "force-dynamic"
+
+/**
+ * For each active filter, how many products dropping it would return.
+ *
+ * Runs only when the set is empty, and every call reuses the same cached native
+ * set, so this costs an in-memory pass per active group rather than a fetch.
+ * Naming the filter to drop is what turns a dead end into a next step.
+ */
+async function relaxationsFor(
+  categoryIds: string[],
+  filters: FilterState
+): Promise<Relaxation[]> {
+  const candidates: { group: string; label: string; next: FilterState }[] = []
+
+  for (const group of Object.keys(filters.groups)) {
+    const groups = { ...filters.groups }
+    delete groups[group]
+    candidates.push({ group, label: group, next: { ...filters, groups } })
+  }
+
+  if (filters.price) {
+    candidates.push({
+      group: "price",
+      label: "price filter",
+      next: { ...filters, price: null },
+    })
+  }
+
+  const results = await Promise.all(
+    candidates.map(async ({ group, label, next }) => {
+      const { count } = await searchProducts({
+        categoryIds,
+        facets: next.groups,
+        minPrice: next.price?.min,
+        maxPrice: next.price?.max,
+        pageSize: 1,
+      })
+
+      return { group, label, count }
+    })
+  )
+
+  // Only suggest a relaxation that actually helps.
+  return results.filter((r) => r.count > 0).sort((a, b) => b.count - a.count)
+}
 
 export default async function CategoryPage({
   params,
   searchParams,
 }: PageProps<"/categories/[handle]">) {
-  // Next 16: both are Promises.
   const [{ handle }, rawSearchParams] = await Promise.all([params, searchParams])
 
   const category = await getCategoryByHandle(handle)
@@ -40,25 +95,24 @@ export default async function CategoryPage({
 
   const filters = parseFilters(rawSearchParams)
 
-  // The category's own id AND every descendant's.
-  //
-  // Products are assigned to leaf categories only, so a parent like Electronics
-  // has none of its own — passing just its id would render an empty page for
-  // the busiest categories in the shop.
+  // The category's own id AND every descendant's. Products sit on leaves only,
+  // so passing just this id would render an empty page for a parent.
   const categoryIds = await getDescendantIds(handle)
 
-  const [trail, { products, count, facets, priceBounds }] = await Promise.all([
-    getCategoryPath(handle),
-    searchProducts({
-      categoryIds,
-      sort: filters.sort,
-      page: filters.page,
-      minPrice: filters.price?.min,
-      maxPrice: filters.price?.max,
-      // Every non-reserved URL param is a facet group — `?colour=black`.
-      facets: filters.groups,
-    }),
-  ])
+  const [trail, { products, count, facets, priceBounds, page, pageCount }] =
+    await Promise.all([
+      getCategoryPath(handle),
+      searchProducts({
+        categoryIds,
+        sort: filters.sort,
+        page: filters.page,
+        minPrice: filters.price?.min,
+        maxPrice: filters.price?.max,
+        facets: filters.groups,
+      }),
+    ])
+
+  const relaxations = count === 0 ? await relaxationsFor(categoryIds, filters) : []
 
   return (
     <Container className="py-6">
@@ -67,39 +121,42 @@ export default async function CategoryPage({
           { label: "Home", href: "/" },
           ...trail.map((node, i) => ({
             label: node.name,
-            // The last crumb is the current page and must not be a link.
-            href: i === trail.length - 1 ? undefined : `/categories/${node.handle}`,
+            href:
+              i === trail.length - 1 ? undefined : `/categories/${node.handle}`,
           })),
         ]}
       />
 
-      {/* Plain heading for now. CategoryHeader — description, subcategory chips,
-          result count styling — is task 64. */}
-      <h1 className="mt-4 text-2xl font-bold sm:text-3xl">{category.name}</h1>
+      <CategoryHeader category={category} count={count} className="mt-4" />
 
-      {category.description && (
-        <p className="mt-2 max-w-2xl text-muted">{category.description}</p>
-      )}
-
-      {/* Sidebar and grid. The sidebar hides itself below lg — task 72 puts
-          the same groups in a bottom sheet for mobile. */}
       <div className="mt-6 flex gap-8">
         <FilterSidebar facets={facets} priceBounds={priceBounds} />
 
         <div className="min-w-0 flex-1">
-          <p className="mb-4 text-muted">
-            {count} {count === 1 ? "product" : "products"}
-          </p>
+          {/* The drawer trigger is mobile-only; the chips show at every width,
+              since below lg there is no sidebar to read active state from. */}
+          <div className="mb-4 flex flex-col gap-3">
+            <FilterDrawer facets={facets} handle={handle} />
+            <ActiveFilterChips facets={facets} />
+          </div>
 
           {products.length > 0 ? (
-            <ProductGrid products={products} />
+            <>
+              {/* Task 74: streaming lives HERE, after notFound(). */}
+              <Suspense
+                fallback={<ProductGrid products={[]} loading skeletonCount={8} />}
+              >
+                <ProductGrid products={products} />
+              </Suspense>
+
+              <PaginationControls
+                page={page}
+                pageCount={pageCount}
+                className="mt-8"
+              />
+            </>
           ) : (
-            // Inline, not the EmptyState primitive — that is task 73, which
-            // also suggests which filter to drop and how many results that
-            // would return.
-            <p className="rounded-lg border border-line bg-cream p-6 text-muted">
-              No products match these filters.
-            </p>
+            <EmptyResults relaxations={relaxations} />
           )}
         </div>
       </div>

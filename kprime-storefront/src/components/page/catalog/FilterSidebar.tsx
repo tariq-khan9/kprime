@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 import { CheckboxFilterGroup } from "@/components/page/catalog/CheckboxFilterGroup"
+import { ColorSwatchFilter } from "@/components/page/catalog/ColorSwatchFilter"
 import { PriceRangeFilter } from "@/components/page/catalog/PriceRangeFilter"
 import { SortDropdown } from "@/components/page/catalog/SortDropdown"
 import { FILTER_HIDDEN, FILTER_ORDER } from "@/config/filters"
@@ -38,6 +39,9 @@ function ordered(facets: Facet[]): Facet[] {
     })
     .map(({ facet }) => facet)
 }
+
+/** Colour renders as swatches; everything else as checkboxes. */
+const COLOUR_KEYS = new Set(["colour", "color"])
 
 export type FilterSidebarProps = {
   facets: Facet[]
@@ -105,9 +109,13 @@ export function FilterSidebar({
 
         {priceBounds && <PriceRangeFilter bounds={priceBounds} />}
 
-        {groups.map((facet) => (
-          <CheckboxFilterGroup key={facet.key} facet={facet} />
-        ))}
+        {groups.map((facet) =>
+          COLOUR_KEYS.has(facet.key) ? (
+            <ColorSwatchFilter key={facet.key} facet={facet} />
+          ) : (
+            <CheckboxFilterGroup key={facet.key} facet={facet} />
+          )
+        )}
       </div>
     </aside>
   )
