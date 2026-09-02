@@ -119,12 +119,18 @@ export default async function CartPage() {
           </div>
 
           <CartSummary cart={cart} className="w-full lg:w-80 lg:shrink-0">
-            {/* Checkout lands in Block L; it is also blocked while any line
-                cannot be fulfilled, so the failure happens here with an
-                explanation rather than at the payment step. */}
-            <Button variant="primary" disabled className="w-full">
-              Checkout
-            </Button>
+            {/* Blocked while any line cannot be fulfilled, so the failure
+                happens here with an explanation rather than three steps later
+                at placement. The alert above says which item and what to do. */}
+            {issues.length > 0 ? (
+              <Button variant="primary" disabled className="w-full">
+                Checkout
+              </Button>
+            ) : (
+              <Button variant="primary" asChild className="w-full">
+                <Link href="/checkout">Checkout</Link>
+              </Button>
+            )}
           </CartSummary>
         </div>
       )}

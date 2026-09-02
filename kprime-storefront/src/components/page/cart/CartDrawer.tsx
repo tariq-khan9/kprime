@@ -123,9 +123,10 @@ export function CartDrawer() {
               </Link>
             </Button>
 
-            {/* Checkout lands in Block L. */}
-            <Button variant="primary" disabled className="w-full">
-              Checkout
+            <Button variant="primary" asChild className="w-full">
+              <Link href="/checkout" onClick={() => setOpen(false)}>
+                Checkout
+              </Link>
             </Button>
           </div>
         )}
