@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { getCartId } from "@/lib/data/cart"
 import {
+  ensurePaymentSession,
   saveAddress,
   saveContact,
   saveShippingMethod,
@@ -84,4 +85,14 @@ export async function saveShippingMethodAction(
   }
 
   return result
+}
+
+export async function ensurePaymentSessionAction(): Promise<CheckoutResult> {
+  const cartId = await getCartId()
+
+  if (!cartId) {
+    return NO_CART
+  }
+
+  return ensurePaymentSession(cartId)
 }

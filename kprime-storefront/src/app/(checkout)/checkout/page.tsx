@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 
 import { CheckoutStepper } from "@/components/page/checkout/CheckoutStepper"
 import { ContactStep } from "@/components/page/checkout/ContactStep"
+import { OrderReviewStep } from "@/components/page/checkout/OrderReviewStep"
+import { OrderSummaryPanel } from "@/components/page/checkout/OrderSummaryPanel"
 import { ShippingAddressStep } from "@/components/page/checkout/ShippingAddressStep"
 import { ShippingMethodStep } from "@/components/page/checkout/ShippingMethodStep"
 import { getCart, getCartId } from "@/lib/data/cart"
@@ -66,34 +68,71 @@ export default async function CheckoutPage({
       ? state.furthestStep
       : wanted
 
-  // Fetched only for the step that needs them. Shipping options in particular
+  // Fetched only for the steps that need them. Shipping options in particular
   // are uncached and depend on the saved address, so asking for them on every
-  // step would be a wasted round trip three times out of four.
-  const provinces = step === "address" ? await getProvinces() : []
-  const shippingOptions =
-    step === "delivery" ? await getShippingOptions(cartId) : []
+  // step would be a wasted round trip.
+  const needsOptions = step === "delivery" || step === "review"
+
+  const [provinces, shippingOptions] = await Promise.all([
+    step === "address" || step === "review" ? getProvinces() : [],
+    needsOptions ? getShippingOptions(cartId) : [],
+  ])
+
+  const method =
+    shippingOptions.find((option) => option.id === state.shippingOptionId) ??
+    null
+
+  const provinceName =
+    provinces.find((entry) => entry.code === state.province)?.name ?? null
+
+  // The total is only final once a method is chosen; before that the summary
+  // says "calculated at checkout" rather than showing a total that will change.
+  const shippingKnown = Boolean(state.shippingOptionId)
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6">
       <CheckoutStepper current={step} className="mb-8" />
 
-      {step === "contact" && <ContactStep state={state} />}
-
-      {step === "address" && (
-        <ShippingAddressStep state={state} provinces={provinces} />
-      )}
-
-      {step === "delivery" && (
-        <ShippingMethodStep
-          options={shippingOptions}
-          city={state.city ?? ""}
-          selected={state.shippingOptionId}
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+        {/* Summary first in the DOM on mobile, where it is a collapsed bar
+            above the form; the order flips at lg. */}
+        <OrderSummaryPanel
+          cart={cart}
+          shippingKnown={shippingKnown}
+          className="w-full lg:order-2 lg:w-80 lg:shrink-0"
         />
-      )}
 
-      {step === "review" && (
-        <p className="text-muted">The review step lands in tasks 109–111.</p>
-      )}
+        <div className="min-w-0 flex-1 lg:order-1">
+          {step === "contact" && <ContactStep state={state} />}
+
+          {step === "address" && (
+            <ShippingAddressStep state={state} provinces={provinces} />
+          )}
+
+          {step === "delivery" && (
+            <ShippingMethodStep
+              options={shippingOptions}
+              city={state.city ?? ""}
+              selected={state.shippingOptionId}
+            />
+          )}
+
+          {step === "review" && (
+            <>
+              <OrderReviewStep
+                state={state}
+                method={method}
+                provinceName={provinceName}
+              />
+
+              {/* PlaceOrderButton lands in task 112. */}
+              <p className="mt-6 text-sm text-muted">
+                Placing the order lands in task 112.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
