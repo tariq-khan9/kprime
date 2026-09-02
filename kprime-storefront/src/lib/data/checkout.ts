@@ -287,3 +287,29 @@ export async function saveAddress(
     return fail(error, "Could not save your address.")
   }
 }
+
+/**
+ * Chooses a shipping method.
+ *
+ * Medusa replaces any previously selected method rather than adding a second,
+ * so changing the choice does not accumulate charges.
+ */
+export async function saveShippingMethod(
+  cartId: string,
+  optionId: string
+): Promise<CheckoutResult> {
+  if (!optionId) {
+    return {
+      ok: false,
+      errors: [{ field: "option", message: "Choose a delivery option." }],
+    }
+  }
+
+  try {
+    await sdk.store.cart.addShippingMethod(cartId, { option_id: optionId })
+
+    return await readBack()
+  } catch (error) {
+    return fail(error, "Could not save your delivery option.")
+  }
+}

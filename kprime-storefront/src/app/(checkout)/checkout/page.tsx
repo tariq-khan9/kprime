@@ -3,9 +3,10 @@ import { redirect } from "next/navigation"
 import { CheckoutStepper } from "@/components/page/checkout/CheckoutStepper"
 import { ContactStep } from "@/components/page/checkout/ContactStep"
 import { ShippingAddressStep } from "@/components/page/checkout/ShippingAddressStep"
+import { ShippingMethodStep } from "@/components/page/checkout/ShippingMethodStep"
 import { getCart, getCartId } from "@/lib/data/cart"
 import { getCheckoutState, type CheckoutStepName } from "@/lib/data/checkout"
-import { getProvinces } from "@/lib/data/shipping"
+import { getProvinces, getShippingOptions } from "@/lib/data/shipping"
 
 /**
  * Checkout.
@@ -65,7 +66,12 @@ export default async function CheckoutPage({
       ? state.furthestStep
       : wanted
 
+  // Fetched only for the step that needs them. Shipping options in particular
+  // are uncached and depend on the saved address, so asking for them on every
+  // step would be a wasted round trip three times out of four.
   const provinces = step === "address" ? await getProvinces() : []
+  const shippingOptions =
+    step === "delivery" ? await getShippingOptions(cartId) : []
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
@@ -77,10 +83,16 @@ export default async function CheckoutPage({
         <ShippingAddressStep state={state} provinces={provinces} />
       )}
 
-      {(step === "delivery" || step === "review") && (
-        <p className="text-muted">
-          The {step} step lands in tasks 108–111.
-        </p>
+      {step === "delivery" && (
+        <ShippingMethodStep
+          options={shippingOptions}
+          city={state.city ?? ""}
+          selected={state.shippingOptionId}
+        />
+      )}
+
+      {step === "review" && (
+        <p className="text-muted">The review step lands in tasks 109–111.</p>
       )}
     </div>
   )
