@@ -5,10 +5,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
 import { Container } from "@/components/layout/Container"
 import { ActiveFilterChips } from "@/components/page/catalog/ActiveFilterChips"
 import { CategoryHeader } from "@/components/page/catalog/CategoryHeader"
-import {
-  EmptyResults,
-  type Relaxation,
-} from "@/components/page/catalog/EmptyResults"
+import { EmptyResults } from "@/components/page/catalog/EmptyResults"
 import { FilterDrawer } from "@/components/page/catalog/FilterDrawer"
 import { FilterSidebar } from "@/components/page/catalog/FilterSidebar"
 import { PaginationControls } from "@/components/page/catalog/PaginationControls"
@@ -19,7 +16,8 @@ import {
   getDescendantIds,
 } from "@/lib/data/categories"
 import { searchProducts } from "@/lib/data/products"
-import { parseFilters, type FilterState } from "@/lib/filters/url-state"
+import { relaxationsFor } from "@/lib/filters/relaxations"
+import { parseFilters } from "@/lib/filters/url-state"
 
 /**
  * Category listing.
@@ -35,51 +33,6 @@ import { parseFilters, type FilterState } from "@/lib/filters/url-state"
  * grid instead, which sits AFTER the 404 check.
  */
 export const dynamic = "force-dynamic"
-
-/**
- * For each active filter, how many products dropping it would return.
- *
- * Runs only when the set is empty, and every call reuses the same cached native
- * set, so this costs an in-memory pass per active group rather than a fetch.
- * Naming the filter to drop is what turns a dead end into a next step.
- */
-async function relaxationsFor(
-  categoryIds: string[],
-  filters: FilterState
-): Promise<Relaxation[]> {
-  const candidates: { group: string; label: string; next: FilterState }[] = []
-
-  for (const group of Object.keys(filters.groups)) {
-    const groups = { ...filters.groups }
-    delete groups[group]
-    candidates.push({ group, label: group, next: { ...filters, groups } })
-  }
-
-  if (filters.price) {
-    candidates.push({
-      group: "price",
-      label: "price filter",
-      next: { ...filters, price: null },
-    })
-  }
-
-  const results = await Promise.all(
-    candidates.map(async ({ group, label, next }) => {
-      const { count } = await searchProducts({
-        categoryIds,
-        facets: next.groups,
-        minPrice: next.price?.min,
-        maxPrice: next.price?.max,
-        pageSize: 1,
-      })
-
-      return { group, label, count }
-    })
-  )
-
-  // Only suggest a relaxation that actually helps.
-  return results.filter((r) => r.count > 0).sort((a, b) => b.count - a.count)
-}
 
 export default async function CategoryPage({
   params,
@@ -112,7 +65,7 @@ export default async function CategoryPage({
       }),
     ])
 
-  const relaxations = count === 0 ? await relaxationsFor(categoryIds, filters) : []
+  const relaxations = count === 0 ? await relaxationsFor({ categoryIds }, filters) : []
 
   return (
     <Container className="py-6">
