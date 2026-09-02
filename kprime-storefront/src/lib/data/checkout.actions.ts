@@ -6,6 +6,7 @@ import { getCartId } from "@/lib/data/cart"
 import {
   saveAddress,
   saveContact,
+  saveShippingMethod,
   type AddressDetails,
   type CheckoutResult,
   type ContactDetails,
@@ -59,6 +60,24 @@ export async function saveAddressAction(
   }
 
   const result = await saveAddress(cartId, details, contactName, contactPhone)
+
+  if (result.ok) {
+    revalidatePath("/checkout")
+  }
+
+  return result
+}
+
+export async function saveShippingMethodAction(
+  optionId: string
+): Promise<CheckoutResult> {
+  const cartId = await getCartId()
+
+  if (!cartId) {
+    return NO_CART
+  }
+
+  const result = await saveShippingMethod(cartId, optionId)
 
   if (result.ok) {
     revalidatePath("/checkout")

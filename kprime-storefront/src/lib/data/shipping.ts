@@ -67,3 +67,39 @@ export async function isDeliverableCity(city: string): Promise<boolean> {
 
   return provinces.some((province) => province.cities.includes(city))
 }
+
+export type ShippingOption = {
+  id: string
+  name: string
+  amount: number
+}
+
+/**
+ * Live shipping options for a cart.
+ *
+ * **Uncached, and resolved against the cart's saved city.** Medusa matches the
+ * city string to a geo zone and returns only the options attached to it, which
+ * is why the address must be written before this step renders (§5.1). Caching
+ * would be actively wrong: the answer depends on an address that changes
+ * between one request and the next.
+ *
+ * An empty list is a real answer, not an error — it means the city has no zone,
+ * and the step says so rather than showing an empty radio group.
+ */
+export async function getShippingOptions(
+  cartId: string
+): Promise<ShippingOption[]> {
+  try {
+    const { shipping_options } = await sdk.client.fetch<{
+      shipping_options: { id: string; name: string; amount?: number | null }[]
+    }>("/store/shipping-options", { query: { cart_id: cartId } })
+
+    return (shipping_options ?? []).map((option) => ({
+      id: option.id,
+      name: option.name,
+      amount: option.amount ?? 0,
+    }))
+  } catch {
+    return []
+  }
+}
