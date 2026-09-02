@@ -4,11 +4,13 @@ import { CheckoutStepper } from "@/components/page/checkout/CheckoutStepper"
 import { ContactStep } from "@/components/page/checkout/ContactStep"
 import { OrderReviewStep } from "@/components/page/checkout/OrderReviewStep"
 import { OrderSummaryPanel } from "@/components/page/checkout/OrderSummaryPanel"
+import { PlaceOrderButton } from "@/components/page/checkout/PlaceOrderButton"
 import { ShippingAddressStep } from "@/components/page/checkout/ShippingAddressStep"
 import { ShippingMethodStep } from "@/components/page/checkout/ShippingMethodStep"
 import { getCart, getCartId } from "@/lib/data/cart"
 import { getCheckoutState, type CheckoutStepName } from "@/lib/data/checkout"
 import { getProvinces, getShippingOptions } from "@/lib/data/shipping"
+import { formatPKR } from "@/lib/utils/format"
 
 /**
  * Checkout.
@@ -125,10 +127,13 @@ export default async function CheckoutPage({
                 provinceName={provinceName}
               />
 
-              {/* PlaceOrderButton lands in task 112. */}
-              <p className="mt-6 text-sm text-muted">
-                Placing the order lands in task 112.
-              </p>
+              {/* Blocked if the chosen delivery option disappeared between
+                  choosing it and arriving here — the review step says so, and
+                  placing would fail anyway. */}
+              <PlaceOrderButton
+                disabled={!method}
+                total={formatPKR(cart.total)}
+              />
             </>
           )}
         </div>
