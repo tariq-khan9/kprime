@@ -139,44 +139,122 @@ function toSummary(product: Record<string, any>): ProductSummary {
 }
 
 /**
- * Everything Medusa can filter natively, fetched whole and cached.
+ * The subset of params that changes what Medusa returns.
  *
- * Deliberately unpaginated. §2.1: Medusa must not paginate while we post-filter
- * on price, or the counts and page boundaries disagree with what is shown.
+ * Price, sort, page and pageSize are all applied in memory afterwards, so they
+ * must NOT reach the cached function: `unstable_cache` builds its key from
+ * `JSON.stringify(arguments)`, and passing the whole params object gave every
+ * page and every sort order its own cache entry holding an identical copy of
+ * the catalogue.
  */
-async function fetchNativeSet(
-  params: SearchProductsParams
-): Promise<ProductSummary[]> {
-  const regionId = await getRegionId()
-
-  const query: Record<string, unknown> = {
-    fields: CARD_FIELDS,
-    limit: 1000,
-    ...(regionId ? { region_id: regionId } : {}),
-    ...(params.categoryIds?.length
-      ? { category_id: params.categoryIds }
-      : {}),
-    ...(params.collectionIds?.length
-      ? { collection_id: params.collectionIds }
-      : {}),
-    ...(params.typeIds?.length ? { type_id: params.typeIds } : {}),
-    ...(params.tagIds?.length ? { tag_id: params.tagIds } : {}),
-    ...(params.optionValueIds?.length
-      ? { option_value_id: params.optionValueIds }
-      : {}),
-    ...(params.q ? { q: params.q } : {}),
-  }
-
-  const { products } = await sdk.store.product.list(query)
-
-  return products.map(toSummary)
+type NativeQuery = {
+  categoryIds?: string[]
+  collectionIds?: string[]
+  typeIds?: string[]
+  tagIds?: string[]
+  optionValueIds?: string[]
+  q?: string
 }
 
-const cachedNativeSet = unstable_cache(
-  fetchNativeSet,
-  ["products"],
-  { tags: ["products"] }
-)
+/**
+ * Built in a fixed key order with sorted id arrays, so two requests that mean
+ * the same thing serialise identically and share a cache entry — `[a, b]` and
+ * `[b, a]` are the same filter.
+ */
+function nativeQueryOf(params: SearchProductsParams): NativeQuery {
+  const ids = (values?: string[]) =>
+    values?.length ? [...values].sort() : undefined
+
+  return {
+    categoryIds: ids(params.categoryIds),
+    collectionIds: ids(params.collectionIds),
+    typeIds: ids(params.typeIds),
+    tagIds: ids(params.tagIds),
+    optionValueIds: ids(params.optionValueIds),
+    q: params.q || undefined,
+  }
+}
+
+/** Per request to Medusa. The full set is assembled by looping. */
+const FETCH_BATCH = 200
+
+/**
+ * A category this large means the in-memory approach has outgrown itself and
+ * the filtering belongs in a search engine. Better to log it loudly than to
+ * silently truncate and serve wrong counts.
+ */
+const MAX_SET = 5000
+
+/**
+ * Everything Medusa can filter natively, fetched whole and cached.
+ *
+ * Deliberately unpaginated at the Medusa level. §2.1: Medusa must not paginate
+ * while we post-filter on price, or the counts and page boundaries disagree
+ * with what is shown. The batching below is transport only — every batch is
+ * concatenated before anything is filtered.
+ */
+async function fetchNativeSet(query: NativeQuery): Promise<ProductSummary[]> {
+  const regionId = await getRegionId()
+
+  const base: Record<string, unknown> = {
+    fields: CARD_FIELDS,
+    ...(regionId ? { region_id: regionId } : {}),
+    ...(query.categoryIds?.length ? { category_id: query.categoryIds } : {}),
+    ...(query.collectionIds?.length
+      ? { collection_id: query.collectionIds }
+      : {}),
+    ...(query.typeIds?.length ? { type_id: query.typeIds } : {}),
+    ...(query.tagIds?.length ? { tag_id: query.tagIds } : {}),
+    ...(query.optionValueIds?.length
+      ? { option_value_id: query.optionValueIds }
+      : {}),
+    ...(query.q ? { q: query.q } : {}),
+  }
+
+  const started = Date.now()
+  const summaries: ProductSummary[] = []
+  let offset = 0
+
+  for (;;) {
+    const { products, count } = await sdk.store.product.list({
+      ...base,
+      limit: FETCH_BATCH,
+      offset,
+    })
+
+    summaries.push(...products.map(toSummary))
+    offset += products.length
+
+    if (products.length === 0 || summaries.length >= count) {
+      break
+    }
+
+    if (summaries.length >= MAX_SET) {
+      console.warn(
+        `[products] result set hit the ${MAX_SET} cap — counts past this point ` +
+          `are wrong. Filtering needs to move out of server memory.`
+      )
+      break
+    }
+  }
+
+  // Only ever logged on a cache miss, so a steady stream of these means the
+  // cache is not working. §2.1 budgets roughly 500 bytes per product; the
+  // payload is held in server memory and never shipped to the browser.
+  const bytes = Buffer.byteLength(JSON.stringify(summaries), "utf8")
+  console.info(
+    `[products] fetched ${summaries.length} in ${Date.now() - started}ms · ` +
+      `${(bytes / 1024).toFixed(1)}KB · ${
+        summaries.length ? Math.round(bytes / summaries.length) : 0
+      }B/product`
+  )
+
+  return summaries
+}
+
+const cachedNativeSet = unstable_cache(fetchNativeSet, ["products"], {
+  tags: ["products"],
+})
 
 /**
  * The one entry point for every product listing — category, search and
@@ -188,7 +266,9 @@ const cachedNativeSet = unstable_cache(
 export async function searchProducts(
   params: SearchProductsParams = {}
 ): Promise<SearchProductsResult> {
-  const all = await cachedNativeSet(params)
+  // Only the native part is cached on. Everything below runs per request
+  // against the same cached array.
+  const all = await cachedNativeSet(nativeQueryOf(params))
 
   const pricedValues = all
     .map((product) => product.price)
@@ -219,23 +299,25 @@ export async function searchProducts(
     return (a.price - b.price) * dir
   }
 
-  const sorted = [...matched]
-
-  switch (params.sort) {
-    case "price_asc":
-      sorted.sort((a, b) => byPrice(a, b, 1))
-      break
-    case "price_desc":
-      sorted.sort((a, b) => byPrice(a, b, -1))
-      break
-    case "title":
-      sorted.sort((a, b) => a.title.localeCompare(b.title))
-      break
-    case "newest":
-    default:
-      sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      break
+  const compare: Record<
+    ProductSort,
+    (a: ProductSummary, b: ProductSummary) => number
+  > = {
+    price_asc: (a, b) => byPrice(a, b, 1),
+    price_desc: (a, b) => byPrice(a, b, -1),
+    title: (a, b) => a.title.localeCompare(b.title),
+    newest: (a, b) => b.createdAt.localeCompare(a.createdAt),
   }
+
+  const primary = compare[params.sort ?? "newest"] ?? compare.newest
+
+  // Every comparison falls back to id. Without a tiebreak, products with equal
+  // prices (or timestamps from the same seed run) can order differently between
+  // requests — and since pagination slices this array, an unstable order means
+  // the same product appearing on two pages while another is skipped entirely.
+  const sorted = [...matched].sort(
+    (a, b) => primary(a, b) || a.id.localeCompare(b.id)
+  )
 
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE
   const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize))
