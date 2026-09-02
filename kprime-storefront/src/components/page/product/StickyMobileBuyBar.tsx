@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type RefObject } from "react"
 
+import { AddToCartButton } from "@/components/page/product/AddToCartButton"
 import { PriceDisplay } from "@/components/shared/PriceDisplay"
-import { Button } from "@/components/ui/Button"
 import { cn } from "@/lib/utils/format"
 
 export type StickyMobileBuyBarProps = {
@@ -11,9 +11,9 @@ export type StickyMobileBuyBarProps = {
   watch: RefObject<HTMLElement | null>
   price: number | null
   originalPrice?: number | null
-  disabled?: boolean
-  /** Wired in task 94. Absent means add-to-cart does not exist yet. */
-  onAddToCart?: () => void
+  variantId: string | null
+  quantity?: number
+  outOfStock?: boolean
 }
 
 /**
@@ -36,8 +36,9 @@ export function StickyMobileBuyBar({
   watch,
   price,
   originalPrice,
-  disabled = false,
-  onAddToCart,
+  variantId,
+  quantity = 1,
+  outOfStock = false,
 }: StickyMobileBuyBarProps) {
   const [shown, setShown] = useState(false)
 
@@ -93,17 +94,15 @@ export function StickyMobileBuyBar({
         className="min-w-0 flex-1"
       />
 
-      <Button
-        variant="primary"
-        // Not yet wired: task 94 adds the cart. Disabled is honest — a button
-        // that silently does nothing is worse than one that says it cannot.
-        disabled={disabled || !onAddToCart}
-        onClick={onAddToCart}
-        tabIndex={shown ? 0 : -1}
+      {/* The same action as the in-page button, so the two cannot behave
+          differently. It is off screen most of the time; aria-hidden on the
+          wrapper keeps the duplicate out of the accessibility tree. */}
+      <AddToCartButton
+        variantId={variantId}
+        quantity={quantity}
+        outOfStock={outOfStock}
         className="shrink-0"
-      >
-        Add to cart
-      </Button>
+      />
     </div>
   )
 }

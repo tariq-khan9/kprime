@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react"
 
+import { AddToCartButton } from "@/components/page/product/AddToCartButton"
 import { DeliveryEstimateBox } from "@/components/page/product/DeliveryEstimateBox"
 import { ProductTitleBlock } from "@/components/page/product/ProductTitleBlock"
 import { StickyMobileBuyBar } from "@/components/page/product/StickyMobileBuyBar"
@@ -15,7 +16,6 @@ import {
 } from "@/components/page/product/VariantOptionSelector"
 import { PriceDisplay } from "@/components/shared/PriceDisplay"
 import { QuantityStepper } from "@/components/shared/QuantityStepper"
-import { Button } from "@/components/ui/Button"
 import type { ProductDetail } from "@/lib/data/products"
 
 /**
@@ -89,11 +89,12 @@ export function ProductBuyPanel({ product }: { product: ProductDetail }) {
           disabled={soldOut}
         />
 
-        {/* Task 94 wires this. Disabled until then, which is also the honest
-            state when the chosen combination is sold out. */}
-        <Button variant="primary" disabled className="min-w-40 flex-1">
-          {soldOut ? "Out of stock" : "Add to cart"}
-        </Button>
+        <AddToCartButton
+          variantId={variant?.id ?? null}
+          quantity={quantity}
+          outOfStock={soldOut}
+          className="min-w-40 flex-1"
+        />
       </div>
 
       {needsChoice && (
@@ -108,7 +109,9 @@ export function ProductBuyPanel({ product }: { product: ProductDetail }) {
         watch={buyArea}
         price={price}
         originalPrice={originalPrice}
-        disabled={soldOut}
+        variantId={variant?.id ?? null}
+        quantity={quantity}
+        outOfStock={soldOut}
       />
     </div>
   )
