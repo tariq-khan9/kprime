@@ -27,6 +27,19 @@ import { parseFilters } from "@/lib/filters/url-state"
  */
 export const dynamic = "force-dynamic"
 
+/**
+ * Search results are deliberately `noindex`.
+ *
+ * Every query string is a distinct URL, so letting them be indexed spends the
+ * crawl budget on an unbounded set of near-duplicate pages and risks thin-content
+ * penalties. The categories and products they point at are the pages worth
+ * ranking.
+ */
+export const metadata = {
+  title: "Search",
+  robots: { index: false, follow: true },
+}
+
 export default async function SearchPage({
   searchParams,
 }: PageProps<"/search">) {

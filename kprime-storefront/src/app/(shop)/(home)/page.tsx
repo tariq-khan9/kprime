@@ -4,8 +4,10 @@ import { CategoryRail } from "@/components/page/home/CategoryRail"
 import { HeroCarousel } from "@/components/page/home/HeroCarousel"
 import { NewsletterSignup } from "@/components/page/home/NewsletterSignup"
 import { PromoBannerPair } from "@/components/page/home/PromoBannerPair"
+import { JsonLd } from "@/components/shared/JsonLd"
 import { ProductRail } from "@/components/shared/ProductRail"
 import { getCategoryTree } from "@/lib/data/categories"
+import { organization } from "@/lib/seo/structured-data"
 import { getCollectionByHandle } from "@/lib/data/collections"
 import { getTagIdsByValue, searchProducts } from "@/lib/data/products"
 
@@ -76,6 +78,10 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-10 pb-10">
+      {/* Organization, with the WhatsApp contact point — the number people
+          actually reach us on (task 149). */}
+      <JsonLd data={organization()} />
+
       {/* Full-bleed: outside Container on purpose. */}
       <HeroCarousel />
 

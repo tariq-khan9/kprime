@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
@@ -9,6 +10,7 @@ import { EmptyResults } from "@/components/page/catalog/EmptyResults"
 import { FilterDrawer } from "@/components/page/catalog/FilterDrawer"
 import { FilterSidebar } from "@/components/page/catalog/FilterSidebar"
 import { PaginationControls } from "@/components/page/catalog/PaginationControls"
+import { JsonLd } from "@/components/shared/JsonLd"
 import { ProductGrid } from "@/components/shared/ProductGrid"
 import {
   getCategoryByHandle,
@@ -18,6 +20,7 @@ import {
 import { searchProducts } from "@/lib/data/products"
 import { relaxationsFor } from "@/lib/filters/relaxations"
 import { parseFilters } from "@/lib/filters/url-state"
+import { breadcrumbList } from "@/lib/seo/structured-data"
 
 /**
  * Category listing.
@@ -33,6 +36,41 @@ import { parseFilters } from "@/lib/filters/url-state"
  * grid instead, which sits AFTER the 404 check.
  */
 export const dynamic = "force-dynamic"
+
+/**
+ * Category metadata (task 145).
+ *
+ * The description comes from the category's own `description` in admin when it
+ * has one, so merchandising copy written by the shop is what search engines
+ * show — no code change needed to improve it.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ handle: string }>
+}): Promise<Metadata> {
+  const { handle } = await params
+  const category = await getCategoryByHandle(handle)
+
+  if (!category) {
+    return { title: "Category not found" }
+  }
+
+  const description =
+    category.description ??
+    `${category.name} delivered across Pakistan, cash on delivery.`
+
+  return {
+    title: category.name,
+    description,
+    alternates: { canonical: `/categories/${category.handle}` },
+    openGraph: {
+      title: category.name,
+      description,
+      url: `/categories/${category.handle}`,
+    },
+  }
+}
 
 export default async function CategoryPage({
   params,
@@ -70,6 +108,16 @@ export default async function CategoryPage({
 
   return (
     <Container className="py-6">
+      <JsonLd
+        data={breadcrumbList([
+          { name: "Home", path: "/" },
+          ...trail.map((node) => ({
+            name: node.name,
+            path: `/categories/${node.handle}`,
+          })),
+        ])}
+      />
+
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
