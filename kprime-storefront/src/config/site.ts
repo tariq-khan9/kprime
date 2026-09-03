@@ -27,6 +27,17 @@ export function whatsappLink(message?: string): string {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base
 }
 
+/**
+ * The site's own origin, for canonical URLs, Open Graph and the sitemap.
+ *
+ * Absolute URLs are not optional for social previews: WhatsApp, Facebook and
+ * Twitter all refuse a relative image path, and WhatsApp is the dominant
+ * sharing channel for this shop.
+ */
+export const BASE_URL = (
+  process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:8000"
+).replace(/\/$/, "")
+
 export const SITE = {
   name: "Karkhano Prime",
   /** Split for the stacked lockup — KARKHANO small above PRIME large. */

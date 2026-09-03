@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
@@ -30,6 +31,32 @@ import { parseFilters } from "@/lib/filters/url-state"
  * 404. Streaming is the <Suspense> around the grid, which sits AFTER the check.
  */
 export const dynamic = "force-dynamic"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ handle: string }>
+}): Promise<Metadata> {
+  const { handle } = await params
+  const collection = await getCollectionByHandle(handle)
+
+  if (!collection) {
+    return { title: "Collection not found" }
+  }
+
+  const description = `${collection.title} — hand-picked and delivered across Pakistan, cash on delivery.`
+
+  return {
+    title: collection.title,
+    description,
+    alternates: { canonical: `/collections/${collection.handle}` },
+    openGraph: {
+      title: collection.title,
+      description,
+      url: `/collections/${collection.handle}`,
+    },
+  }
+}
 
 export default async function CollectionPage({
   params,

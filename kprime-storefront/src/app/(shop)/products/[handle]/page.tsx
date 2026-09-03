@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
@@ -7,10 +8,12 @@ import { ProductBuyPanel } from "@/components/page/product/ProductBuyPanel"
 import { ProductGallery } from "@/components/page/product/ProductGallery"
 import { ProductTabs } from "@/components/page/product/ProductTabs"
 import { ProductReviews } from "@/components/page/review/ProductReviews"
+import { JsonLd } from "@/components/shared/JsonLd"
 import { ProductRail } from "@/components/shared/ProductRail"
 import { REVIEWS_ANCHOR } from "@/components/page/product/ProductTitleBlock"
 import { getCategoryPath } from "@/lib/data/categories"
 import { getFirstReviewPage } from "@/lib/data/reviews"
+import { breadcrumbList, productSchema } from "@/lib/seo/structured-data"
 import { getProduct, getProductHandles, searchProducts } from "@/lib/data/products"
 
 /**
@@ -27,6 +30,15 @@ import { getProduct, getProductHandles, searchProducts } from "@/lib/data/produc
  */
 export const revalidate = 3600
 
+/** Merchandising labels, not brands. Mirrors ProductTitleBlock. */
+const NON_BRAND_TAGS = new Set([
+  "New Arrival",
+  "Bestseller",
+  "Imported",
+  "Warranty Included",
+  "Sale",
+])
+
 /** How many related products the rail asks for. */
 const RELATED_LIMIT = 12
 
@@ -37,6 +49,61 @@ const RELATED_LIMIT = 12
  * after a build still renders — on demand, then cached — rather than 404ing
  * until the next deploy.
  */
+/**
+ * Per-product metadata (task 145).
+ *
+ * The title carries the brand when the product has one, because that is what
+ * people search for — "Anker power bank", not "power bank". The OG image is the
+ * product photo, so a link shared on WhatsApp shows the thing being sold rather
+ * than the shop logo.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ handle: string }>
+}): Promise<Metadata> {
+  const { handle } = await params
+  const product = await getProduct(handle)
+
+  if (!product) {
+    return { title: "Product not found" }
+  }
+
+  // Same rule the title block uses: the first tag that is not a merchandising
+  // label is the brand.
+  const brand = product.tags.find(
+    (tag) => !NON_BRAND_TAGS.has(tag)
+  )
+
+  const title = brand ? `${brand} ${product.title}` : product.title
+
+  const description =
+    product.description?.slice(0, 155) ??
+    product.subtitle ??
+    `${product.title}. Cash on delivery across Pakistan.`
+
+  const image = product.images[0]?.url ?? product.thumbnail
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/products/${product.handle}` },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url: `/products/${product.handle}`,
+      ...(image ? { images: [{ url: image, alt: product.title }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+  }
+}
+
 export async function generateStaticParams() {
   const handles = await getProductHandles()
 
@@ -71,8 +138,37 @@ export default async function ProductPage({
   // Never recommend the page you are already on.
   const siblings = related.products.filter((item) => item.id !== product.id)
 
+  // Any sellable variant means the product can be bought.
+  const inStock = product.variants.some(
+    (variant) =>
+      !variant.manageInventory ||
+      variant.allowBackorder ||
+      variant.inventoryQuantity === null ||
+      variant.inventoryQuantity > 0
+  )
+
   return (
     <Container className="py-6">
+      <JsonLd
+        data={productSchema({
+          product,
+          averageRating: reviews.average,
+          reviewCount: reviews.count,
+          inStock,
+        })}
+      />
+
+      <JsonLd
+        data={breadcrumbList([
+          { name: "Home", path: "/" },
+          ...trail.map((node) => ({
+            name: node.name,
+            path: `/categories/${node.handle}`,
+          })),
+          { name: product.title, path: `/products/${product.handle}` },
+        ])}
+      />
+
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },

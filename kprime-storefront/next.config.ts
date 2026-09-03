@@ -7,7 +7,7 @@ import type { NextConfig } from "next";
  * one exists.
  *
  * Derived from the same env var the SDK uses, so dev and production do not
- * drift apart. Task 150 does the wider image audit — formats, sizes, priority.
+ * drift apart.
  */
 const backendUrl = new URL(
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? "http://localhost:9000"
@@ -15,6 +15,15 @@ const backendUrl = new URL(
 
 const nextConfig: NextConfig = {
   images: {
+    /**
+     * AVIF first, WebP second, original last.
+     *
+     * Next negotiates per request from the Accept header, so a browser that
+     * cannot take AVIF still gets WebP. Ordering matters: AVIF is roughly 20–30%
+     * smaller than WebP at the same quality, which is worth having on a shop
+     * whose traffic is mostly mobile data.
+     */
+    formats: ["image/avif", "image/webp"],
     /**
      * Next 16 refuses to optimize an image whose host resolves to a private IP,
      * as SSRF protection. In development the Medusa backend is localhost, which

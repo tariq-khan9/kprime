@@ -99,8 +99,10 @@ export function ProductGallery({
             // Only the first image is an LCP candidate; the rest are swapped in
             // after an interaction and must not compete with it for bandwidth.
             priority={priority && index === 0}
-            // One column on mobile, roughly half the container on desktop.
-            sizes="(max-width: 1024px) 100vw, 50vw"
+            // Matches the layout: full width on mobile, and the 2/5 column on
+            // desktop capped by the 5xl container. A hint that overstates the
+            // width makes the browser download a file it then scales down.
+            sizes="(max-width: 1024px) 100vw, 40vw"
             className={cn(
               "object-contain transition-transform duration-200 ease-out",
               zoomed && "cursor-zoom-in"
