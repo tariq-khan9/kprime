@@ -40,7 +40,8 @@ export const SITE = {
  * Deliberately makes NO free-delivery claim — every zone configured in tasks 5
  * and 6 charges, and a promise here would contradict the checkout total.
  */
-export const ANNOUNCEMENT = "Cash on delivery across Pakistan · Delivered in 2–5 days"
+export const ANNOUNCEMENT =
+  "Cash on delivery across Pakistan · Delivered in 1–5 days to most cities"
 
 /**
  * Routes land in task 137. They 404 until then, which the build expects — the
@@ -92,7 +93,7 @@ export const HERO_SLIDES: HeroSlide[] = [
   },
   {
     heading: "For the home",
-    subheading: "Kitchenware and bedding, delivered in 2–5 days.",
+    subheading: "Kitchenware and bedding, delivered in 1–5 days to most cities.",
     ctaLabel: "Browse home",
     ctaHref: "/categories/home-and-bedding",
     gradient: "from-brand to-action-ink",
