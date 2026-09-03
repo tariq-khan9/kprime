@@ -6,7 +6,6 @@ import { NewsletterSignup } from "@/components/page/home/NewsletterSignup"
 import { PromoBannerPair } from "@/components/page/home/PromoBannerPair"
 import { JsonLd } from "@/components/shared/JsonLd"
 import { ProductRail } from "@/components/shared/ProductRail"
-import { getCategoryTree } from "@/lib/data/categories"
 import { organization } from "@/lib/seo/structured-data"
 import { getCollectionByHandle } from "@/lib/data/collections"
 import { getTagIdsByValue, searchProducts } from "@/lib/data/products"
@@ -48,8 +47,6 @@ const RAILS: Rail[] = [
 ]
 
 export default async function HomePage() {
-  const tree = await getCategoryTree()
-
   const rails = await Promise.all(
     RAILS.map(async (rail) => {
       // Every branch below resolves to a SCOPE or to null, and null means an
@@ -99,7 +96,8 @@ export default async function HomePage() {
       </Container>
 
       <Container>
-        <CategoryRail categories={tree} />
+        {/* Curated tiles from src/static/category.ts, not the live tree. */}
+        <CategoryRail />
       </Container>
 
       {rails.slice(1).map((rail) => (

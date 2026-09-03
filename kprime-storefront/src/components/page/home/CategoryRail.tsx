@@ -1,31 +1,13 @@
+import Image from "next/image"
 import Link from "next/link"
 
 import { ScrollRail } from "@/components/shared/ScrollRail"
-import type { CategoryNode } from "@/lib/data/categories"
+import { CATEGORY_TILES, type CategoryTile } from "@/static/category"
 import { cn } from "@/lib/utils/format"
 
-/**
- * Deterministic tint per tile.
- *
- * Medusa categories have no image field, so these are generated rather than
- * uploaded. Picking by index keeps the palette stable between renders — a tile
- * that changes colour on every reload reads as a bug.
- */
-const TINTS = [
-  "from-brand to-brand-light",
-  "from-brand-light to-brand",
-  "from-sale/70 to-sale",
-  "from-action-ink to-brand",
-  "from-success/70 to-brand",
-  "from-brand to-action-ink",
-  "from-brand-light to-action-ink",
-  "from-sale/60 to-brand",
-  "from-brand to-success/70",
-  "from-action-ink to-brand-light",
-]
-
 export type CategoryRailProps = {
-  categories: CategoryNode[]
+  /** Defaults to the curated six in `src/static/category.ts`. */
+  tiles?: CategoryTile[]
   className?: string
 }
 
@@ -33,26 +15,31 @@ export type CategoryRailProps = {
  * Scrolling row of category tiles — three visible on desktop, the rest reached
  * by the arrows.
  *
- * A rail rather than a wrapping grid because the category count is open-ended:
- * a grid grows downwards, and at ten categories it pushed roughly 785px of
- * navigation above the first product on a phone. A rail is the same height
- * whether there are 4 categories or 40.
+ * A rail rather than a wrapping grid because a grid grows downwards: at ten
+ * categories it pushed roughly 785px of navigation above the first product on a
+ * phone. A rail is the same height whether there are four tiles or forty.
  *
  * Tiles are 3:2 landscape, deliberately the inverse of ProductCard's 3:4
  * portrait, so a category is never mistaken for a product at a glance.
  *
+ * **Reads a curated list, not the live tree.** See `src/static/category.ts` for
+ * why. The header's mega menu and the footer still render every category.
+ *
  * Server component: ScrollRail is the only client code involved.
  */
-export function CategoryRail({ categories, className }: CategoryRailProps) {
-  if (categories.length === 0) {
+export function CategoryRail({
+  tiles = CATEGORY_TILES,
+  className,
+}: CategoryRailProps) {
+  if (tiles.length === 0) {
     return null
   }
 
   return (
     <ScrollRail title="Shop by category" className={className}>
-      {categories.map((category, i) => (
+      {tiles.map((tile) => (
         <div
-          key={category.id}
+          key={tile.href}
           className={cn(
             "shrink-0 snap-start",
             // Phone ~2.2 tiles, tablet ~3.3 — the partial tile signals there is
@@ -65,29 +52,36 @@ export function CategoryRail({ categories, className }: CategoryRailProps) {
           )}
         >
           <Link
-            href={`/categories/${category.handle}`}
+            href={tile.href}
             className={cn(
-              "group flex flex-col overflow-hidden rounded-md",
+              "group block overflow-hidden rounded-md",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
               "focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
             )}
           >
-            <div
-              className={cn(
-                "flex aspect-[3/2] items-end bg-gradient-to-br p-3 md:p-4",
-                TINTS[i % TINTS.length]
-              )}
-            >
-              <span className="text-base font-bold text-cream sm:text-lg md:text-xl">
-                {category.name}
+            {/* Cream ground so the tile is never a white gap while the image
+                loads, and the box is sized before it arrives — no layout shift. */}
+            <div className="relative flex aspect-[3/2] items-end overflow-hidden rounded-md bg-cream">
+              <Image
+                src={tile.image}
+                // Decorative: the title below is the same information, and a
+                // screen reader should not hear the category name twice.
+                alt=""
+                fill
+                // Two tiles at 360px, three from md.
+                sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 33vw"
+                className="object-cover transition-transform duration-200 group-hover:scale-105"
+              />
+
+              {/* The title sits on the photograph, so it needs the same scrim
+                  the hero uses — without it legibility depends on whatever
+                  happens to be behind those words. */}
+              <div aria-hidden className="absolute inset-0 bg-brand/50" />
+
+              <span className="relative p-3 text-base font-bold text-cream sm:text-lg md:p-4 md:text-xl">
+                {tile.title}
               </span>
             </div>
-
-            {category.children.length > 0 && (
-              <span className="mt-1 text-sm text-muted">
-                {category.children.length} subcategories
-              </span>
-            )}
           </Link>
         </div>
       ))}
