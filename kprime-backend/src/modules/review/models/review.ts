@@ -28,13 +28,32 @@ const Review = model
     // Spread: `model.enum` wants a mutable array, and REVIEW_STATUSES is
     // `as const` so the status type can be derived from it.
     status: model.enum([...REVIEW_STATUSES]).default("pending"),
+    /**
+     * The review this one answers, for a merchant reply.
+     *
+     * Present even though only one level is ever rendered (§2.4). Threading is
+     * unreadable at 360px, so the storefront draws replies flat and indented
+     * once — but the column costs nothing now and a migration on a table with
+     * real reviews in it costs a great deal later.
+     */
+    parent_id: model.text().nullable(),
   })
   .indexes([
     // Listing a product's approved reviews is the only hot read path.
     { on: ["product_id", "status"] },
     // One review per product per order. Buying the same thing twice earns a
     // second say; submitting the same order twice does not.
-    { on: ["order_id", "product_id"], unique: true },
+    //
+    // Scoped to top-level rows. A merchant reply copies its parent's order and
+    // product ids, so an unscoped unique index makes replying impossible — the
+    // reply collides with the review it is answering.
+    {
+      on: ["order_id", "product_id"],
+      unique: true,
+      where: "parent_id IS NULL AND deleted_at IS NULL",
+    },
+    // Replies are fetched by the review they answer.
+    { on: ["parent_id"] },
   ]);
 
 export default Review;

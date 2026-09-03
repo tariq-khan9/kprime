@@ -42,8 +42,11 @@ export default async function seedSalePrices({ container }: ExecArgs) {
 
   // Two overlapping sale lists would make it unpredictable which price wins, so
   // this refuses to stack a second one rather than trying to merge them.
+  // `title` is not in Medusa's FilterablePriceListProps, but the module does
+  // filter on it — verified against the live database. Cast rather than list
+  // every price list and filter in memory.
   const existing = await pricingModule.listPriceLists(
-    { title: [TITLE] },
+    { title: [TITLE] } as any,
     { select: ["id"] }
   );
 
@@ -106,6 +109,9 @@ export default async function seedSalePrices({ container }: ExecArgs) {
 
   await createPriceListsWorkflow(container).run({
     input: {
+      // `type` is absent from CreatePriceListWorkflowInputDTO but is what makes
+      // this a sale list rather than an override — confirmed by the resulting
+      // compare-at prices on the storefront. Cast so the intent survives.
       price_lists_data: [
         {
           title: TITLE,
@@ -118,7 +124,7 @@ export default async function seedSalePrices({ container }: ExecArgs) {
           status: "active",
           prices,
         },
-      ],
+      ] as any,
     },
   });
 
