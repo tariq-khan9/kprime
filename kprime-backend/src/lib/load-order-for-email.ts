@@ -16,6 +16,9 @@ export const ORDER_EMAIL_FIELDS = [
   "id",
   "display_id",
   "email",
+  // The synthetic address lives on `email`; a real one, when the shopper gave
+  // it, lives here. Mail goes to the second and never the first.
+  "metadata",
   "status",
   "created_at",
   "currency_code",
