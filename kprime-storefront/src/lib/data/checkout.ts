@@ -350,6 +350,35 @@ export async function ensurePaymentSession(
   }
 }
 
+/**
+ * Medusa's completion errors are written for developers.
+ *
+ * A real one reads "Not enough stock available for item iitem_01M1… at location
+ * sloc_01M1…", which tells a shopper nothing and leaks internal ids onto the
+ * most sensitive page in the app. Known shapes are translated; anything
+ * unrecognised falls back to a plain sentence rather than being passed through.
+ */
+function shopperMessage(response: {
+  error?: { message?: string }
+  message?: string
+}): string {
+  const raw = `${response.error?.message ?? ""} ${response.message ?? ""}`.toLowerCase()
+
+  if (raw.includes("stock") || raw.includes("inventory")) {
+    return "Something in your cart just sold out. Go back to your cart to fix it."
+  }
+
+  if (raw.includes("payment")) {
+    return "We could not prepare your order for payment. Please try again."
+  }
+
+  if (raw.includes("shipping")) {
+    return "Your delivery option is no longer available. Please choose another."
+  }
+
+  return "We could not place your order. Please try again."
+}
+
 export type PlaceOrderResult =
   | { ok: true; orderId: string }
   | { ok: false; errors: CheckoutError[] }
@@ -381,12 +410,7 @@ export async function completeOrder(cartId: string): Promise<PlaceOrderResult> {
       return { ok: true, orderId: response.order.id }
     }
 
-    const message =
-      response.error?.message ??
-      response.message ??
-      "We could not place your order. Please try again."
-
-    return { ok: false, errors: [{ message }] }
+    return { ok: false, errors: [{ message: shopperMessage(response) }] }
   } catch (error) {
     return {
       ok: false,
