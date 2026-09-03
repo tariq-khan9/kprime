@@ -22,6 +22,15 @@ const Review = model
     order_id: model.text(),
     email: model.text(),
     customer_id: model.text().nullable(),
+    /**
+     * The buyer's name, copied from the order at submission.
+     *
+     * Stored rather than joined: the storefront shows a masked form ("Ahmed K.")
+     * on every review, and resolving it live would mean an order lookup per row.
+     * Copying it also freezes what was true when they wrote it — editing an
+     * address later should not silently rewrite an old review's byline.
+     */
+    reviewer_name: model.text().nullable(),
     rating: model.number(),
     title: model.text().nullable(),
     content: model.text().nullable(),

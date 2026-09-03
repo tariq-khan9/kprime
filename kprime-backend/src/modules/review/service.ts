@@ -16,6 +16,8 @@ export type CreateReviewInput = {
   title?: string | null;
   content?: string | null;
   customer_id?: string | null;
+  /** Copied from the order, so the byline never needs an order lookup. */
+  reviewer_name?: string | null;
 };
 
 /**
