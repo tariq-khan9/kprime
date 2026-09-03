@@ -1,7 +1,18 @@
 # Hero images
 
-Photographs for the home page carousel. Drop files here, then reference them in
-`HERO_SLIDES` in `src/config/site.ts`:
+Photographs for the home page carousel.
+
+## The five files here are PLACEHOLDERS
+
+`cash-on-delivery.jpg`, `electronics.jpg`, `home.jpg`, `cosmetics.jpg` and
+`kitchen.jpg` are generated stand-ins with the word PLACEHOLDER printed on them,
+so nobody mistakes them for finished artwork. Replace each with a real
+photograph of the same name and nothing else needs changing — the slides in
+`src/lib/static/hero.ts` already point at these filenames.
+
+## Adding or changing a slide
+
+Slides live in `src/lib/static/hero.ts`. Drop a file here and reference it:
 
 ```ts
 {

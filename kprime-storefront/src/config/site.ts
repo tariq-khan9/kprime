@@ -78,62 +78,12 @@ export const HELP_LINKS = [{ label: "Track your order", href: "/track" }] as con
  * of the "real content" job; no component needs editing.
  * ------------------------------------------------------------------ */
 
-export type HeroSlide = {
-  heading: string
-  subheading: string
-  ctaLabel: string
-  ctaHref: string
-  /**
-   * Tailwind gradient classes.
-   *
-   * Required even on a slide that has an image: it shows through until the
-   * photograph paints, and it is the whole slide for any entry without one.
-   */
-  gradient: string
-  /**
-   * Path under `public/`, e.g. `/hero/electronics.jpg`. Omit for a gradient.
-   *
-   * A navy scrim is drawn over every image so the heading stays legible
-   * whatever the photograph looks like behind those particular words.
-   */
-  image?: string
-  /** Describes the photograph. Required whenever `image` is set. */
-  imageAlt?: string
-}
-
 /**
- * The three home page slides.
- *
- * PLACEHOLDER copy — honest about what the shop does, but drafts.
- *
- * To use a photograph on a slide: drop the file into `public/hero/`, then add
- * `image: "/hero/your-file.jpg"` and an `imageAlt` describing it. Slides without
- * an `image` keep their gradient, so photography can be adopted one slide at a
- * time. See `public/hero/README.md` for the sizes the slot expects.
+ * Hero slides moved to `lib/static/hero.ts`, which owns both the type and the
+ * data. Re-exported here so existing imports keep working.
  */
-export const HERO_SLIDES: HeroSlide[] = [
-  {
-    heading: "Cash on delivery, nationwide",
-    subheading: "Pay when your order reaches you. No card, no advance.",
-    ctaLabel: "Start shopping",
-    ctaHref: "/categories/electronics",
-    gradient: "from-brand to-brand-light",
-  },
-  {
-    heading: "Electronics that last",
-    subheading: "Chargers, audio and accessories with a warranty.",
-    ctaLabel: "Browse electronics",
-    ctaHref: "/categories/electronics",
-    gradient: "from-brand-light to-brand",
-  },
-  {
-    heading: "For the home",
-    subheading: "Kitchenware and bedding, delivered in 1–5 days to most cities.",
-    ctaLabel: "Browse home",
-    ctaHref: "/categories/home-and-bedding",
-    gradient: "from-brand to-action-ink",
-  },
-]
+export type { HeroSlide } from "@/lib/static/hero"
+export { HERO_SLIDES } from "@/lib/static/hero"
 
 export type PromoBanner = {
   heading: string
