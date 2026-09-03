@@ -79,11 +79,11 @@ export const HELP_LINKS = [{ label: "Track your order", href: "/track" }] as con
  * ------------------------------------------------------------------ */
 
 /**
- * Hero slides moved to `lib/static/hero.ts`, which owns both the type and the
+ * Hero slides moved to `src/static/hero.ts`, which owns both the type and the
  * data. Re-exported here so existing imports keep working.
  */
-export type { HeroSlide } from "@/lib/static/hero"
-export { HERO_SLIDES } from "@/lib/static/hero"
+export type { HeroSlide } from "@/static/hero"
+export { HERO_SLIDES } from "@/static/hero"
 
 export type PromoBanner = {
   heading: string

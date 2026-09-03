@@ -8,11 +8,11 @@ Photographs for the home page carousel.
 `kitchen.jpg` are generated stand-ins with the word PLACEHOLDER printed on them,
 so nobody mistakes them for finished artwork. Replace each with a real
 photograph of the same name and nothing else needs changing — the slides in
-`src/lib/static/hero.ts` already point at these filenames.
+`src/static/hero.ts` already point at these filenames.
 
 ## Adding or changing a slide
 
-Slides live in `src/lib/static/hero.ts`. Drop a file here and reference it:
+Slides live in `src/static/hero.ts`. Drop a file here and reference it:
 
 ```ts
 {
