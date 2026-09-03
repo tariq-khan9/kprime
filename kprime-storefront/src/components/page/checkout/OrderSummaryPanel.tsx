@@ -1,10 +1,10 @@
 "use client"
 
-import Image from "next/image"
 import { useState } from "react"
 
 import { CartSummary } from "@/components/shared/CartSummary"
-import type { Cart, CartLine } from "@/lib/data/cart"
+import { OrderItemsList } from "@/components/shared/OrderItemsList"
+import type { Cart } from "@/lib/data/cart"
 import { cn, formatPKR } from "@/lib/utils/format"
 
 function Chevron({ open }: { open: boolean }) {
@@ -26,47 +26,6 @@ function Chevron({ open }: { open: boolean }) {
         strokeLinejoin="round"
       />
     </svg>
-  )
-}
-
-/**
- * The line list. Task 115 replaces this with the shared `OrderItemsList`, which
- * the confirmation page also uses; until then it is deliberately a plain list
- * rather than a second component nobody asked for.
- */
-function Items({ items }: { items: CartLine[] }) {
-  return (
-    <ul className="flex flex-col gap-3">
-      {items.map((line) => (
-        <li key={line.id} className="flex items-start gap-3">
-          <div className="relative aspect-[3/4] w-12 shrink-0 overflow-hidden rounded border border-line bg-cream">
-            {line.thumbnail && (
-              <Image
-                src={line.thumbnail}
-                alt=""
-                fill
-                sizes="48px"
-                className="object-contain"
-              />
-            )}
-          </div>
-
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="line-clamp-2 break-words text-sm text-brand">
-              {line.title}
-            </span>
-            {line.variantTitle && (
-              <span className="text-xs text-muted">{line.variantTitle}</span>
-            )}
-            <span className="text-xs text-muted">Qty {line.quantity}</span>
-          </div>
-
-          <span className="shrink-0 text-sm text-brand">
-            {formatPKR(line.unitPrice * line.quantity)}
-          </span>
-        </li>
-      ))}
-    </ul>
   )
 }
 
@@ -125,7 +84,7 @@ export function OrderSummaryPanel({
         </button>
 
         <div id="order-summary-mobile" hidden={!open} className="px-4 pb-4">
-          <Items items={cart.items} />
+          <OrderItemsList items={cart.items} compact />
           <CartSummary
             cart={cart}
             shippingKnown={shippingKnown}
@@ -137,7 +96,7 @@ export function OrderSummaryPanel({
       {/* Desktop: always open. */}
       <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:rounded-md lg:border lg:border-line lg:bg-cream lg:p-4">
         <h2 className="font-bold text-brand">Your order</h2>
-        <Items items={cart.items} />
+        <OrderItemsList items={cart.items} compact />
         <CartSummary
           cart={cart}
           shippingKnown={shippingKnown}
