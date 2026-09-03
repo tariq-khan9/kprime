@@ -2,6 +2,7 @@ import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 
 import { renderOrderPlacedEmail } from "../emails/order-placed";
+import { customerEmailFor } from "../lib/customer-email";
 import { loadOrderForEmail } from "../lib/load-order-for-email";
 
 /**
@@ -28,9 +29,15 @@ export default async function orderPlacedHandler({
     return;
   }
 
-  if (!order.email) {
-    logger.warn(
-      `order.placed: order ${order.display_id ?? order.id} has no email, skipping customer mail`
+  // Never `order.email` — that is the synthetic address (§2.2). Most orders
+  // have no real one, which is normal and not worth a warning.
+  const recipient = customerEmailFor(order);
+
+  if (!recipient) {
+    logger.info(
+      `order.placed: order ${
+        order.display_id ?? order.id
+      } has no real email, skipping customer mail`
     );
     return;
   }
@@ -44,7 +51,7 @@ export default async function orderPlacedHandler({
 
   try {
     await notificationModuleService.createNotifications({
-      to: order.email,
+      to: recipient,
       channel: "email",
       template: "order-placed",
       content: { subject, html, text },
@@ -58,7 +65,7 @@ export default async function orderPlacedHandler({
     logger.info(
       `order.placed: confirmation email queued for order #${
         order.display_id ?? order.id
-      } to ${order.email}`
+      } to ${recipient}`
     );
   } catch (error) {
     logger.error(
