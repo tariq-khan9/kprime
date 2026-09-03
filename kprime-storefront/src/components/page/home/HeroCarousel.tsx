@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 
@@ -164,15 +165,48 @@ export function HeroCarousel({ className }: { className?: string }) {
             className="w-full shrink-0 snap-start"
           >
             {/* Just over three quarters of the viewport, capped — on a tall
-                desktop monitor 78vh is 800px+ of gradient around one heading. */}
+                desktop monitor 78vh is 800px+ of gradient around one heading.
+                The height is fixed here, before any image loads, so a
+                photograph arriving late cannot shift the page. */}
             <div
               onClick={onSlideClick}
               className={cn(
-                "flex min-h-[78vh] max-h-[46rem] cursor-pointer items-center bg-gradient-to-br",
+                "relative flex min-h-[78vh] max-h-[46rem] cursor-pointer items-center overflow-hidden bg-gradient-to-br",
+                // Kept even on an image slide: it shows through until the photo
+                // paints, so the slide is never a white box.
                 slide.gradient
               )}
             >
-              <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+              {slide.image && (
+                <>
+                  <Image
+                    src={slide.image}
+                    // Empty on a clone: the same photograph is already described
+                    // on the real slide, and the clone is aria-hidden.
+                    alt={clone ? "" : (slide.imageAlt ?? "")}
+                    fill
+                    // Only the FIRST REAL slide. Every slide is rendered twice
+                    // to make the loop seamless, so marking them all priority
+                    // would preload six images and have the LCP candidate
+                    // compete with five nobody has scrolled to.
+                    priority={i === 0}
+                    // Full-bleed at every width.
+                    sizes="100vw"
+                    className="object-cover"
+                  />
+
+                  {/* The scrim. Without it the heading's legibility depends on
+                      whatever happens to be behind those words in the photo —
+                      one light-toned image and the first thing every visitor
+                      sees is unreadable. Image slides only; dimming a gradient
+                      would just muddy the copy. */}
+                  <div aria-hidden className="absolute inset-0 bg-brand/60" />
+                </>
+              )}
+
+              {/* Relative so the copy stacks above the image and scrim without
+                  needing a z-index. */}
+              <div className="relative mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
                 <div className="max-w-lg">
                   <h2 className="text-2xl font-bold text-cream sm:text-3xl lg:text-4xl">
                     {slide.heading}

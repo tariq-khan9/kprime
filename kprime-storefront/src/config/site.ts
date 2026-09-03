@@ -83,10 +83,34 @@ export type HeroSlide = {
   subheading: string
   ctaLabel: string
   ctaHref: string
-  /** Tailwind gradient classes, standing in until real photography exists. */
+  /**
+   * Tailwind gradient classes.
+   *
+   * Required even on a slide that has an image: it shows through until the
+   * photograph paints, and it is the whole slide for any entry without one.
+   */
   gradient: string
+  /**
+   * Path under `public/`, e.g. `/hero/electronics.jpg`. Omit for a gradient.
+   *
+   * A navy scrim is drawn over every image so the heading stays legible
+   * whatever the photograph looks like behind those particular words.
+   */
+  image?: string
+  /** Describes the photograph. Required whenever `image` is set. */
+  imageAlt?: string
 }
 
+/**
+ * The three home page slides.
+ *
+ * PLACEHOLDER copy — honest about what the shop does, but drafts.
+ *
+ * To use a photograph on a slide: drop the file into `public/hero/`, then add
+ * `image: "/hero/your-file.jpg"` and an `imageAlt` describing it. Slides without
+ * an `image` keep their gradient, so photography can be adopted one slide at a
+ * time. See `public/hero/README.md` for the sizes the slot expects.
+ */
 export const HERO_SLIDES: HeroSlide[] = [
   {
     heading: "Cash on delivery, nationwide",
