@@ -46,6 +46,14 @@ export async function relaxationsFor(
     })
   }
 
+  if (filters.rating !== null) {
+    candidates.push({
+      group: "rating",
+      label: "rating filter",
+      next: { ...filters, rating: null },
+    })
+  }
+
   const results = await Promise.all(
     candidates.map(async ({ group, label, next }) => {
       const { count } = await searchProducts({
@@ -53,6 +61,7 @@ export async function relaxationsFor(
         facets: next.groups,
         minPrice: next.price?.min,
         maxPrice: next.price?.max,
+        minRating: next.rating,
         pageSize: 1,
       })
 

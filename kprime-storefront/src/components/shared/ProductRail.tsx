@@ -55,7 +55,12 @@ export function ProductRail({
             "w-[40%] sm:w-[28%] lg:w-[23%]"
           )}
         >
-          <ProductCard product={product} priority={priority && index < 2} />
+          <ProductCard
+            product={product}
+            rating={product.averageRating}
+            reviewCount={product.reviewCount}
+            priority={priority && index < 2}
+          />
         </div>
       ))}
     </ScrollRail>

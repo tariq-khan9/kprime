@@ -6,8 +6,11 @@ import { MobileGallerySwiper } from "@/components/page/product/MobileGallerySwip
 import { ProductBuyPanel } from "@/components/page/product/ProductBuyPanel"
 import { ProductGallery } from "@/components/page/product/ProductGallery"
 import { ProductTabs } from "@/components/page/product/ProductTabs"
+import { ProductReviews } from "@/components/page/review/ProductReviews"
 import { ProductRail } from "@/components/shared/ProductRail"
+import { REVIEWS_ANCHOR } from "@/components/page/product/ProductTitleBlock"
 import { getCategoryPath } from "@/lib/data/categories"
+import { getFirstReviewPage } from "@/lib/data/reviews"
 import { getProduct, getProductHandles, searchProducts } from "@/lib/data/products"
 
 /**
@@ -55,11 +58,14 @@ export default async function ProductPage({
   // found. Products are assigned to leaves, so the last one is the specific one.
   const leaf = product.categories[product.categories.length - 1] ?? null
 
-  const [trail, related] = await Promise.all([
+  const [trail, related, reviews] = await Promise.all([
     leaf ? getCategoryPath(leaf.handle) : Promise.resolve([]),
     leaf
       ? searchProducts({ categoryIds: [leaf.id], pageSize: RELATED_LIMIT })
       : Promise.resolve({ products: [] }),
+    // First page only, cached under the reviews tag so approving one in admin
+    // shows up without a rebuild (§2.4).
+    getFirstReviewPage(product.id),
   ])
 
   // Never recommend the page you are already on.
@@ -103,11 +109,24 @@ export default async function ProductPage({
         </div>
 
         <div className="min-w-0 flex-1">
-          <ProductBuyPanel product={product} />
+          <ProductBuyPanel
+            product={product}
+            rating={reviews.average}
+            reviewCount={reviews.count}
+          />
         </div>
       </div>
 
       <ProductTabs product={product} className="mt-10" />
+
+      {/* The anchor the star rating in ProductTitleBlock links down to. */}
+      <section id={REVIEWS_ANCHOR} className="mt-12 scroll-mt-24">
+        <h2 className="text-xl font-bold sm:text-2xl">Reviews</h2>
+
+        <div className="mt-4">
+          <ProductReviews productId={product.id} page={reviews} />
+        </div>
+      </section>
 
       {siblings.length > 0 && (
         <ProductRail

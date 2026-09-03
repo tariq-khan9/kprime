@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { CheckboxFilterGroup } from "@/components/page/catalog/CheckboxFilterGroup"
 import { ColorSwatchFilter } from "@/components/page/catalog/ColorSwatchFilter"
 import { PriceRangeFilter } from "@/components/page/catalog/PriceRangeFilter"
+import { RatingFilter } from "@/components/page/catalog/RatingFilter"
 import { SortDropdown } from "@/components/page/catalog/SortDropdown"
 import { FILTER_HIDDEN, FILTER_ORDER } from "@/config/filters"
 import { facetKey, type Facet } from "@/lib/filters/facets"
@@ -47,6 +48,8 @@ export type FilterSidebarProps = {
   facets: Facet[]
   /** True range of the unfiltered set. Null when nothing is priced. */
   priceBounds: { min: number; max: number } | null
+  /** Rating thresholds and how many products each would leave. */
+  ratingCounts?: { minimum: number; count: number }[]
   className?: string
 }
 
@@ -60,6 +63,7 @@ export type FilterSidebarProps = {
 export function FilterSidebar({
   facets,
   priceBounds,
+  ratingCounts,
   className,
 }: FilterSidebarProps) {
   const router = useRouter()
@@ -108,6 +112,10 @@ export function FilterSidebar({
         </div>
 
         {priceBounds && <PriceRangeFilter bounds={priceBounds} />}
+
+        {ratingCounts && ratingCounts.length > 0 && (
+          <RatingFilter counts={ratingCounts} />
+        )}
 
         {groups.map((facet) =>
           COLOUR_KEYS.has(facet.key) ? (

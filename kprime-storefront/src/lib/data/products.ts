@@ -7,6 +7,7 @@ import {
   type SelectedFacets,
 } from "@/lib/filters/facets"
 import { filterByPrice, priceBoundsOf } from "@/lib/filters/price"
+import { byRatingDesc, filterByRating, ratingCounts } from "@/lib/filters/rating"
 import { sdk } from "@/lib/sdk"
 
 /**
@@ -34,6 +35,9 @@ const CARD_FIELDS = [
   "options.title",
   "options.values.value",
   "options.values.id",
+  // Carries average_rating and review_count, written by the review moderation
+  // routes. Cheap: one JSONB column, already on the row being fetched.
+  "metadata",
 ].join(",")
 
 export type ProductSummary = {
@@ -58,6 +62,16 @@ export type ProductSummary = {
   createdAt: string
   tags: string[]
   options: { title: string; values: { id: string; value: string }[] }[]
+  /**
+   * Denormalised on the product by the backend when a review is approved or
+   * rejected (§2.4). Null until something is approved.
+   *
+   * Read from metadata, which is display-only — filtering and sorting by rating
+   * run in the server layer (task 136), because JSONB is not queryable through
+   * the store API.
+   */
+  averageRating: number | null
+  reviewCount: number
 }
 
 /**
@@ -130,6 +144,7 @@ export type ProductDetail = {
 }
 
 export type ProductSort =
+  | "rating"
   | "relevance"
   | "newest"
   | "price_asc"
@@ -153,6 +168,8 @@ export type SearchProductsParams = {
   q?: string
   minPrice?: number
   maxPrice?: number
+  /** "4 stars and up". Applied in server memory, like price (§2.4). */
+  minRating?: number | null
   sort?: ProductSort
   page?: number
   pageSize?: number
@@ -168,6 +185,8 @@ export type SearchProductsResult = {
   priceBounds: { min: number; max: number } | null
   /** Groups above the coverage threshold, for the sidebar. */
   facets: Facet[]
+  /** How many products each rating threshold would leave, for the sidebar. */
+  ratingCounts: { minimum: number; count: number }[]
 }
 
 const DEFAULT_PAGE_SIZE = 24
@@ -241,6 +260,14 @@ function toSummary(product: Record<string, any>): ProductSummary {
         value: value.value,
       })),
     })),
+    averageRating:
+      typeof product.metadata?.average_rating === "number"
+        ? product.metadata.average_rating
+        : null,
+    reviewCount:
+      typeof product.metadata?.review_count === "number"
+        ? product.metadata.review_count
+        : 0,
   }
 }
 
@@ -457,7 +484,13 @@ export async function searchProducts(
   // values that cannot produce a result.
   const facets = deriveFacets(priced)
 
-  const matched = filterByFacets(priced, params.facets ?? {})
+  const faceted = filterByFacets(priced, params.facets ?? {})
+
+  // Counts come from the set BEFORE rating filtering, so the sidebar options do
+  // not collapse onto the current selection — same rule as the facet counts.
+  const ratings = ratingCounts(faceted)
+
+  const matched = filterByRating(faceted, params.minRating ?? null)
 
   // Unpriced products sort last rather than as free.
   const byPrice = (a: ProductSummary, b: ProductSummary, dir: 1 | -1) => {
@@ -479,6 +512,8 @@ export async function searchProducts(
     price_desc: (a, b) => byPrice(a, b, -1),
     title: (a, b) => a.title.localeCompare(b.title),
     newest: byNewest,
+    // Unrated products land last rather than being scored as zero.
+    rating: byRatingDesc,
     // Ties fall through to newest, so equally relevant products still get a
     // meaningful order rather than an alphabetical accident.
     relevance: (a, b) =>
@@ -512,6 +547,7 @@ export async function searchProducts(
     pageCount,
     priceBounds,
     facets,
+    ratingCounts: ratings,
   }
 }
 

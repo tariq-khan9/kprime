@@ -8,9 +8,9 @@ import { buildHref, parseFilters, setSort } from "@/lib/filters/url-state"
 
 type Option = { value: ProductSort; label: string }
 
-/** "Highest Rated" is added in task 136, once ratings exist. */
 const OPTIONS: Option[] = [
   { value: "newest", label: "Newest" },
+  { value: "rating", label: "Highest rated" },
   { value: "price_asc", label: "Price: low to high" },
   { value: "price_desc", label: "Price: high to low" },
   { value: "title", label: "Name" },
