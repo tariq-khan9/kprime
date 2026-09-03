@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { CheckoutStepper } from "@/components/page/checkout/CheckoutStepper"
@@ -7,7 +8,7 @@ import { OrderSummaryPanel } from "@/components/page/checkout/OrderSummaryPanel"
 import { PlaceOrderButton } from "@/components/page/checkout/PlaceOrderButton"
 import { ShippingAddressStep } from "@/components/page/checkout/ShippingAddressStep"
 import { ShippingMethodStep } from "@/components/page/checkout/ShippingMethodStep"
-import { getCart, getCartId } from "@/lib/data/cart"
+import { findCartIssues, getCart, getCartId } from "@/lib/data/cart"
 import { getCheckoutState, type CheckoutStepName } from "@/lib/data/checkout"
 import { getProvinces, getShippingOptions } from "@/lib/data/shipping"
 import { formatPKR } from "@/lib/utils/format"
@@ -26,6 +27,22 @@ import { formatPKR } from "@/lib/utils/format"
  * `?step=review` with an empty address does not skip the address — it lands on
  * the address step. Otherwise the URL would be a way to reach placement without
  * the details placement needs.
+ *
+ * Hardening (task 114). Five things can go wrong between opening checkout and
+ * placing, and each is handled where it happens rather than by a guard rail
+ * around the whole flow:
+ *
+ * - **Back button and refresh** work because the step is a URL parameter and
+ *   every value is read back off the cart, not held in React state. There is no
+ *   in-memory progress to lose.
+ * - **An expired cart** — cookie pointing at a cart the backend no longer has —
+ *   resolves to null and redirects to `/cart`, which explains the empty state.
+ *   It never renders a checkout that cannot complete.
+ * - **Stock changing underneath** is re-checked here, on every render, against
+ *   live inventory. A cart that was fine at `/cart` can go stale while someone
+ *   fills in an address.
+ * - **A failure during completion** keeps the cart: the cookie is dropped only
+ *   after an order exists.
  */
 export const dynamic = "force-dynamic"
 
@@ -91,6 +108,11 @@ export default async function CheckoutPage({
   // says "calculated at checkout" rather than showing a total that will change.
   const shippingKnown = Boolean(state.shippingOptionId)
 
+  // Re-checked here, not trusted from the cart page. Someone can spend several
+  // minutes on these forms, and the last unit of something can sell in that
+  // time. Placement would fail anyway — better to say so before they commit.
+  const issues = await findCartIssues(cart)
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6">
       <CheckoutStepper current={step} className="mb-8" />
@@ -119,6 +141,34 @@ export default async function CheckoutPage({
             />
           )}
 
+          {issues.length > 0 && (
+            <div
+              role="alert"
+              className="mb-6 rounded-md border border-sale bg-paper p-4"
+            >
+              <p className="font-medium text-sale">
+                Something in your cart changed
+              </p>
+              <ul className="mt-2 flex flex-col gap-1 text-sm text-brand">
+                {issues.map((issue) => (
+                  <li key={issue.lineId}>
+                    {issue.kind === "insufficient_stock"
+                      ? `Only ${issue.available} of ${issue.title} left.`
+                      : issue.kind === "out_of_stock"
+                        ? `${issue.title} has gone out of stock.`
+                        : `${issue.title} is no longer available.`}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/cart"
+                className="mt-3 inline-block min-h-11 text-sm underline underline-offset-2"
+              >
+                Go back to your cart to fix this
+              </Link>
+            </div>
+          )}
+
           {step === "review" && (
             <>
               <OrderReviewStep
@@ -131,7 +181,7 @@ export default async function CheckoutPage({
                   choosing it and arriving here — the review step says so, and
                   placing would fail anyway. */}
               <PlaceOrderButton
-                disabled={!method}
+                disabled={!method || issues.length > 0}
                 total={formatPKR(cart.total)}
               />
             </>
