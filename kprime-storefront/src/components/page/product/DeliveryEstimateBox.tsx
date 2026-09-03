@@ -1,20 +1,11 @@
+import { DELIVERY_ZONES, RETURNS_WINDOW_DAYS } from "@/config/policies"
 import { cn } from "@/lib/utils/format"
 
 /**
- * Delivery windows, taken from the shipping option names in
- * `setup-shipping-zones.ts` / `setup-shipping-options.ts` (§5.1).
- *
- * Kept in step with the backend by hand. If a zone's option is renamed there,
- * this is the other place to change — the store API cannot list options without
- * a cart, so the product page has no way to read them live.
+ * Zones come from `config/policies.ts`, which the shipping page, the FAQ and
+ * the returns page all read too — so this box and those pages cannot disagree
+ * about a delivery window (§5.1).
  */
-const ZONES: { zone: string; window: string }[] = [
-  { zone: "Peshawar", window: "1–2 days" },
-  { zone: "Lahore, Karachi, Islamabad", window: "2–4 days" },
-  { zone: "Other cities", window: "3–5 days" },
-  { zone: "Remote areas", window: "5–8 days" },
-]
-
 function TruckIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden className="size-5 shrink-0">
@@ -97,10 +88,10 @@ export function DeliveryEstimateBox({
             <p className="text-muted">1–8 days depending on your city.</p>
           ) : (
             <ul className="flex flex-col gap-0.5 text-muted">
-              {ZONES.map(({ zone, window }) => (
-                <li key={zone} className="flex flex-wrap gap-x-2">
-                  <span>{zone}</span>
-                  <span className="text-brand">{window}</span>
+              {DELIVERY_ZONES.map((zone) => (
+                <li key={zone.name} className="flex flex-wrap gap-x-2">
+                  <span>{zone.name}</span>
+                  <span className="text-brand">{zone.standard}</span>
                 </li>
               ))}
             </ul>
@@ -115,8 +106,8 @@ export function DeliveryEstimateBox({
       <p className="flex items-start gap-2 text-sm text-muted">
         <ReturnIcon />
         <span>
-          Damaged or wrong item? Tell us within 7 days of delivery and we will
-          replace it.
+          Damaged or wrong item? Tell us within {RETURNS_WINDOW_DAYS} days of
+          delivery and we will replace it.
         </span>
       </p>
     </div>

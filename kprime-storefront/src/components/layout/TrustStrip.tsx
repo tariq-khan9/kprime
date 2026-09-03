@@ -59,7 +59,9 @@ function ChatIcon() {
  */
 const ITEMS = [
   { icon: <CashIcon />, title: "Cash on delivery", note: "Pay when it arrives" },
-  { icon: <TruckIcon />, title: "2–5 day delivery", note: "Nationwide" },
+  // "Most cities", not "Nationwide": remote areas take 5–8 days and a blanket
+  // claim would be untrue for exactly the customers least able to chase it.
+  { icon: <TruckIcon />, title: "1–5 day delivery", note: "Most cities" },
   { icon: <ReturnIcon />, title: "Easy returns", note: "Contact us within 7 days" },
   { icon: <ChatIcon />, title: "WhatsApp support", note: "We reply quickly" },
 ]
