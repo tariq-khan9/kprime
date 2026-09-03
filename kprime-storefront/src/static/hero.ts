@@ -18,12 +18,12 @@
 
 export type HeroSlide = {
   /** One line: the promise. */
-  heading: string
+  heading: string;
   /** One line: the detail. */
-  subheading: string
-  ctaLabel: string
+  subheading: string;
+  ctaLabel: string;
   /** Must be a real category handle, or the button 404s. */
-  ctaHref: string
+  ctaHref: string;
   /**
    * Tailwind gradient classes.
    *
@@ -31,17 +31,17 @@ export type HeroSlide = {
    * photograph paints, so a slow connection never sees a white box, and it is
    * the whole slide for any entry without one.
    */
-  gradient: string
+  gradient: string;
   /**
    * Path under `public/`, e.g. `/hero/electronics.jpg`. Omit for a gradient.
    *
    * A navy scrim is drawn over every image so the heading stays legible
    * whatever the photograph looks like behind those particular words.
    */
-  image?: string
+  image?: string;
   /** Describes the photograph. Required whenever `image` is set. */
-  imageAlt?: string
-}
+  imageAlt?: string;
+};
 
 export const HERO_SLIDES: HeroSlide[] = [
   {
@@ -50,7 +50,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     ctaLabel: "Start shopping",
     ctaHref: "/categories/electronics",
     gradient: "from-brand to-brand-light",
-    image: "/hero/cash-on-delivery.jpg",
+    image: "/hero/delivery.jpg",
     imageAlt: "A rider handing a parcel to a customer at their door",
   },
   {
@@ -89,4 +89,4 @@ export const HERO_SLIDES: HeroSlide[] = [
     image: "/hero/kitchen.jpg",
     imageAlt: "A frying pan and storage containers on a kitchen counter",
   },
-]
+];

@@ -185,11 +185,28 @@ export function HeroCarousel({ className }: { className?: string }) {
                     // on the real slide, and the clone is aria-hidden.
                     alt={clone ? "" : (slide.imageAlt ?? "")}
                     fill
-                    // Only the FIRST REAL slide. Every slide is rendered twice
-                    // to make the loop seamless, so marking them all priority
-                    // would preload six images and have the LCP candidate
-                    // compete with five nobody has scrolled to.
+                    // Preload the FIRST REAL slide only — it is the LCP
+                    // candidate. Marking them all priority would preload ten
+                    // images and have the one that matters compete with nine.
                     priority={i === 0}
+                    // The other real slides load eagerly rather than lazily.
+                    //
+                    // Each slide is 100vw wide, so slides 2-5 sit outside the
+                    // viewport horizontally and native lazy loading never
+                    // fetches them — the carousel showed slide 1 and four dark
+                    // panels, because the scrim was covering an unloaded image.
+                    //
+                    // Eager is right here: the carousel auto-advances every 7s,
+                    // so every slide is needed within half a minute. Clones stay
+                    // lazy — they point at the same files, so by the time the
+                    // loop reaches them the browser has them cached.
+                    loading={!clone && i !== 0 ? "eager" : undefined}
+                    // Eager, but explicitly low priority. Next emits a preload
+                    // link for every eager image, so without this the four
+                    // off-screen slides would compete with the LCP image for
+                    // bandwidth — worst on the slow mobile connections most of
+                    // this shop's traffic arrives on.
+                    fetchPriority={!clone && i !== 0 ? "low" : undefined}
                     // Full-bleed at every width.
                     sizes="100vw"
                     className="object-cover"
