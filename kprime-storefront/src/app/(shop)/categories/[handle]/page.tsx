@@ -52,7 +52,7 @@ export default async function CategoryPage({
   // so passing just this id would render an empty page for a parent.
   const categoryIds = await getDescendantIds(handle)
 
-  const [trail, { products, count, facets, priceBounds, page, pageCount }] =
+  const [trail, { products, count, facets, priceBounds, ratingCounts, page, pageCount }] =
     await Promise.all([
       getCategoryPath(handle),
       searchProducts({
@@ -61,6 +61,7 @@ export default async function CategoryPage({
         page: filters.page,
         minPrice: filters.price?.min,
         maxPrice: filters.price?.max,
+        minRating: filters.rating,
         facets: filters.groups,
       }),
     ])
@@ -83,7 +84,11 @@ export default async function CategoryPage({
       <CategoryHeader category={category} count={count} className="mt-4" />
 
       <div className="mt-6 flex gap-8">
-        <FilterSidebar facets={facets} priceBounds={priceBounds} />
+        <FilterSidebar
+            facets={facets}
+            priceBounds={priceBounds}
+            ratingCounts={ratingCounts}
+          />
 
         <div className="min-w-0 flex-1">
           {/* The drawer trigger is mobile-only; the chips show at every width,

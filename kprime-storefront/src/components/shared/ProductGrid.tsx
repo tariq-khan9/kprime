@@ -46,6 +46,10 @@ export function ProductGrid({
         <ProductCard
           key={product.id}
           product={product}
+          // Denormalised on the product, so a grid shows ratings without a
+          // query per card (§2.4).
+          rating={product.averageRating}
+          reviewCount={product.reviewCount}
           // Only the first row. Marking every image priority makes them all
           // compete for bandwidth and helps none of them.
           priority={index < 4}

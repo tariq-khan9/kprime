@@ -37,13 +37,14 @@ export default async function SearchPage({
   // header labels "All products".
   const query = filters.q ?? undefined
 
-  const { products, count, facets, priceBounds, page, pageCount } =
+  const { products, count, facets, priceBounds, ratingCounts, page, pageCount } =
     await searchProducts({
       q: query,
       sort: filters.sort,
       page: filters.page,
       minPrice: filters.price?.min,
       maxPrice: filters.price?.max,
+      minRating: filters.rating,
       facets: filters.groups,
     })
 
@@ -58,7 +59,11 @@ export default async function SearchPage({
       <SearchResultHeader query={filters.q} count={count} />
 
       <div className="mt-6 flex gap-8">
-        <FilterSidebar facets={facets} priceBounds={priceBounds} />
+        <FilterSidebar
+            facets={facets}
+            priceBounds={priceBounds}
+            ratingCounts={ratingCounts}
+          />
 
         <div className="min-w-0 flex-1">
           <div className="mb-4 flex flex-col gap-3">

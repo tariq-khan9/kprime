@@ -26,7 +26,15 @@ import type { ProductDetail } from "@/lib/data/products"
  * the sticky bar are all reading the same resolved variant — they cannot drift
  * apart, which is exactly what task 86 asks for.
  */
-export function ProductBuyPanel({ product }: { product: ProductDetail }) {
+export function ProductBuyPanel({
+  product,
+  rating = null,
+  reviewCount = 0,
+}: {
+  product: ProductDetail
+  rating?: number | null
+  reviewCount?: number
+}) {
   const buyArea = useRef<HTMLDivElement>(null)
 
   // Opens on the first sellable variant, so a shopper does not land on a
@@ -64,7 +72,12 @@ export function ProductBuyPanel({ product }: { product: ProductDetail }) {
 
   return (
     <div ref={buyArea} className="flex flex-col gap-5">
-      <ProductTitleBlock product={product} sku={variant?.sku} />
+      <ProductTitleBlock
+        product={product}
+        sku={variant?.sku}
+        rating={rating}
+        reviewCount={reviewCount}
+      />
 
       <PriceDisplay price={price} originalPrice={originalPrice} size="detail" />
 

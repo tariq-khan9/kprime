@@ -1,4 +1,5 @@
 import type { ProductSort } from "@/lib/data/products"
+import { parseRating } from "@/lib/filters/rating"
 
 /**
  * Filter state lives in the URL, not React state.
@@ -16,9 +17,10 @@ import type { ProductSort } from "@/lib/data/products"
  * never be named one of these, or selecting a colour would silently overwrite
  * the sort.
  */
-export const RESERVED_KEYS = ["price", "sort", "page", "q"] as const
+export const RESERVED_KEYS = ["price", "sort", "page", "q", "rating"] as const
 
 const SORTS: ProductSort[] = [
+  "rating",
   "relevance",
   "newest",
   "price_asc",
@@ -49,6 +51,8 @@ export type FilterState = {
   /** Facet group → selected values, e.g. `{ color: ["red", "blue"] }`. */
   groups: Record<string, string[]>
   price: PriceRange | null
+  /** "4 stars and up", or null. */
+  rating: number | null
   sort: ProductSort
   page: number
   /** Search term. Carried through so /search keeps its query while filtering. */
@@ -63,6 +67,7 @@ export type RawSearchParams =
 export const EMPTY_STATE: FilterState = {
   groups: {},
   price: null,
+  rating: null,
   sort: DEFAULT_SORT,
   page: 1,
   q: null,
@@ -163,6 +168,7 @@ export function parseFilters(params: RawSearchParams): FilterState {
   return {
     groups,
     price: parsePrice(readParam(params, "price")),
+    rating: parseRating(readParam(params, "rating")),
     // An unknown sort falls back rather than throwing.
     sort: known ? (rawSort as ProductSort) : defaultSortFor(q),
     page: Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1,
@@ -196,6 +202,10 @@ export function serialiseFilters(state: FilterState): string {
   if (state.price) {
     const { min, max } = state.price
     params.set("price", `${min ?? ""}-${max ?? ""}`)
+  }
+
+  if (state.rating !== null) {
+    params.set("rating", String(state.rating))
   }
 
   if (state.sort !== defaultSortFor(state.q)) {
@@ -290,6 +300,14 @@ export function setPrice(
 
 export function setSort(state: FilterState, sort: ProductSort): FilterState {
   return withReset(state, { sort })
+}
+
+/** Sets or clears the "N stars and up" filter. */
+export function setRating(
+  state: FilterState,
+  rating: number | null
+): FilterState {
+  return withReset(state, { rating })
 }
 
 /** The one mutation that does NOT reset — paging is the point. */

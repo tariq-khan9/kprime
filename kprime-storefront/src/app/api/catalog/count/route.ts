@@ -51,6 +51,7 @@ export async function GET(request: Request) {
     facets: filters.groups,
     minPrice: filters.price?.min,
     maxPrice: filters.price?.max,
+    minRating: filters.rating,
     // Page size is irrelevant to a count, but 1 keeps the response small; the
     // count is of the whole matched set either way.
     pageSize: 1,
