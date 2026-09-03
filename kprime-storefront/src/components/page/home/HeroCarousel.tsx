@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/Button"
-import { HERO_SLIDES, type HeroSlide } from "@/config/site"
+import { HERO_SLIDES, type HeroSlide } from "@/static/hero"
 import { cn } from "@/lib/utils/format"
 
 const ADVANCE_MS = 7000

@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 
-import { BRANDS } from "@/config/site"
+import { BRANDS } from "@/static/brands"
 import { cn } from "@/lib/utils/format"
 
 /**
