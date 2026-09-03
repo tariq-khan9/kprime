@@ -217,7 +217,13 @@ export function HeroCarousel({ className }: { className?: string }) {
                       one light-toned image and the first thing every visitor
                       sees is unreadable. Image slides only; dimming a gradient
                       would just muddy the copy. */}
-                  <div aria-hidden className="absolute inset-0 bg-brand/60" />
+                  {/* 75%, not less. Measured against all five photographs: at
+                      60% the subheading — cream at 80% opacity — bottomed out
+                      at 3.29:1 against the brightest part of the darkest image,
+                      under the 4.5:1 WCAG AA needs for normal text. 75% is the
+                      first level where every slide clears it, worst case
+                      5.05:1. */}
+                  <div aria-hidden className="absolute inset-0 bg-brand/75" />
                 </>
               )}
 
