@@ -49,13 +49,25 @@ test("add to cart persists across a reload", async ({ page }) => {
   // The cart lives in an httpOnly cookie, so it must survive a full reload.
   await page.goto("/cart")
   await expect(page.getByRole("heading", { name: /your cart/i })).toBeVisible()
-  await expect(page.locator('a[href^="/products/"]').first()).toBeVisible()
+
+  // `:visible` matters here. The cart renders a desktop row and a mobile card
+  // for every line; on a phone viewport the desktop one is first in the DOM and
+  // is display:none, so `.first()` would resolve to a hidden element.
+  await expect(
+    page.locator('a[href^="/products/"]:visible').first()
+  ).toBeVisible()
 })
 
 test("checkout places an order", async ({ page }) => {
   await page.goto("/")
   await page.locator('a[href^="/products/"]').first().click()
   await page.getByRole("button", { name: /add to cart/i }).first().click()
+
+  // Wait for the drawer before navigating. The add is a server action, and
+  // going to checkout while it is still in flight lands on an empty cart.
+  await expect(page.getByRole("link", { name: /view cart/i })).toBeVisible({
+    timeout: 15_000,
+  })
 
   await page.goto("/checkout")
 
@@ -86,6 +98,13 @@ test("track finds the order", async ({ page }) => {
   await page.goto("/")
   await page.locator('a[href^="/products/"]').first().click()
   await page.getByRole("button", { name: /add to cart/i }).first().click()
+
+  // Wait for the drawer before navigating. The add is a server action, and
+  // going to checkout while it is still in flight lands on an empty cart.
+  await expect(page.getByRole("link", { name: /view cart/i })).toBeVisible({
+    timeout: 15_000,
+  })
+
   await page.goto("/checkout")
 
   await page.getByLabel(/full name/i).fill("Track Test")

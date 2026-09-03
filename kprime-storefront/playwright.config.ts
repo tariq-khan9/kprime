@@ -14,6 +14,15 @@ import { defineConfig, devices } from "@playwright/test"
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
+  /**
+   * 90s, not the 30s default.
+   *
+   * Placing an order walks four checkout steps, each a server action against a
+   * live Medusa backend, and completion itself creates a payment collection and
+   * an order. On a cold dev server the first page compile alone can take
+   * several seconds.
+   */
+  timeout: 90_000,
   workers: 1,
   retries: 0,
   reporter: "list",
