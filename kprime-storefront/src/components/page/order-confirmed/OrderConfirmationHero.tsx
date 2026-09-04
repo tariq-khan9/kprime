@@ -43,7 +43,8 @@ function CopyIcon() {
 }
 
 export type OrderConfirmationHeroProps = {
-  orderNumber: number
+  /** Already formatted, e.g. "KP-26-148" — see lib/utils/order-number.ts. */
+  orderNumber: string
   className?: string
 }
 
@@ -70,7 +71,7 @@ export function OrderConfirmationHero({
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(String(orderNumber))
+      await navigator.clipboard.writeText(orderNumber)
       setCopied(true)
       toast({ title: "Order number copied", variant: "success" })
 
@@ -113,7 +114,7 @@ export function OrderConfirmationHero({
           )}
         >
           {/* The biggest thing on the page, by design. */}
-          <span className="text-4xl font-bold tabular-nums text-brand sm:text-5xl">
+          <span className="text-3xl font-bold whitespace-nowrap text-brand sm:text-4xl">
             {orderNumber}
           </span>
 

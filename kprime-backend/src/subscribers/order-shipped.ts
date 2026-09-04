@@ -2,6 +2,7 @@ import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 
 import { customerEmailFor } from "../lib/customer-email";
+import { formatOrderNumber } from "../lib/order-number";
 
 /**
  * Tells the customer their parcel is on its way.
@@ -38,6 +39,7 @@ export default async function orderShippedHandler({
       fields: [
         "id",
         "display_id",
+        "created_at",
         "email",
         "metadata",
         "shipping_address.first_name",
@@ -55,6 +57,8 @@ export default async function orderShippedHandler({
     if (!order) {
       return;
     }
+
+    const orderNumber = formatOrderNumber(order.display_id, order.created_at);
 
     const recipient = customerEmailFor(order);
 
@@ -97,7 +101,7 @@ export default async function orderShippedHandler({
 
     const html = `
       <p>Hi ${name},</p>
-      <p>Your order #${order.display_id} is on its way.</p>
+      <p>Your order ${orderNumber} is on its way.</p>
       ${trackingLines}
       <p>You pay the rider in cash when it arrives.</p>
       <p><a href="${trackUrl}">Check your order</a> any time with your order number and phone number.</p>
@@ -105,7 +109,7 @@ export default async function orderShippedHandler({
 
     const text = [
       `Hi ${name},`,
-      `Your order #${order.display_id} is on its way.`,
+      `Your order ${orderNumber} is on its way.`,
       label?.tracking_number
         ? `Carrier: ${carrier}\nTracking number: ${label.tracking_number}${
             label.tracking_url ? `\n${label.tracking_url}` : ""
@@ -120,7 +124,7 @@ export default async function orderShippedHandler({
       channel: "email",
       template: "order-shipped",
       content: {
-        subject: `Your order #${order.display_id} is on its way`,
+        subject: `Your order ${orderNumber} is on its way`,
         html,
         text,
       },
@@ -132,7 +136,7 @@ export default async function orderShippedHandler({
     });
 
     logger.info(
-      `order.shipped: dispatch email queued for #${order.display_id} to ${recipient}`
+      `order.shipped: dispatch email queued for ${orderNumber} to ${recipient}`
     );
   } catch (error) {
     logger.error(

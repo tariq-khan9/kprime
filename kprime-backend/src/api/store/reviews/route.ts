@@ -2,6 +2,7 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 
 import { REVIEW_MODULE } from "../../../modules/review";
+import { parseOrderNumber } from "../../../lib/order-number";
 
 /**
  * Product reviews, customer side.
@@ -180,11 +181,9 @@ export async function POST(
 
   // Paste-tolerant: people send " #22 ".
   const rawNumber = req.body?.order_number;
-  const orderNumber = Number(
-    typeof rawNumber === "string"
-      ? rawNumber.trim().replace(/^#/, "").trim()
-      : rawNumber
-  );
+  // Accepts every shape a customer might send back: 148, #148, KP-26-148.
+  // Returns null rather than NaN for anything unparseable.
+  const orderNumber = parseOrderNumber(rawNumber);
 
   // The phone is the identity. The synthetic address is derived from it and
   // nothing else, which is what lets a phone match an order placed by a guest.
@@ -198,7 +197,7 @@ export async function POST(
 
   const rating = Number(req.body?.rating);
 
-  if (!Number.isInteger(orderNumber) || orderNumber <= 0 || !email || !productId) {
+  if (orderNumber === null || !email || !productId) {
     return res.status(400).json({
       message:
         "An order number, the phone used at checkout, and a product are all required.",

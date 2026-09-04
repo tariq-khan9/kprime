@@ -1,5 +1,6 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
+import { parseOrderNumber } from "../../../lib/order-number";
 
 /**
  * Guest order tracking, by order number AND phone.
@@ -131,19 +132,15 @@ export async function POST(req: MedusaRequest<TrackBody>, res: MedusaResponse) {
 
   const rawNumber = req.body?.order_number;
 
-  // Trimmed before the "#" is stripped, not after: people paste " #22 " and
-  // stripping first leaves the leading space, which yields NaN.
-  const orderNumber = Number(
-    typeof rawNumber === "string"
-      ? rawNumber.trim().replace(/^#/, "").trim()
-      : rawNumber
-  );
+  // Accepts every shape a customer might send back: 148, #148, KP-26-148.
+  // Returns null rather than NaN for anything unparseable.
+  const orderNumber = parseOrderNumber(rawNumber);
 
   const phone = normalizePhone(req.body?.phone);
 
   // BOTH are required. This is the check that makes phone-only lookup
   // impossible; do not relax it.
-  if (!Number.isInteger(orderNumber) || orderNumber <= 0 || !phone) {
+  if (orderNumber === null || !phone) {
     return res.status(400).json({
       message: "An order number and the phone used at checkout are both required.",
     });

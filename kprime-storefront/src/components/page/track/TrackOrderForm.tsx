@@ -10,6 +10,7 @@ import { trackOrderAction } from "@/lib/data/track.actions"
 import type { TrackedOrder } from "@/lib/data/track"
 import { normalizePhone, formatPhoneForDisplay } from "@/lib/identity/phone"
 import { formatPKR } from "@/lib/utils/format"
+import { formatOrderNumber } from "@/lib/utils/order-number"
 
 /**
  * Order number and phone, both required.
@@ -107,7 +108,7 @@ export function TrackOrderForm() {
           <div className="rounded-md border border-line bg-paper p-4">
             <p className="text-sm text-muted">Order number</p>
             <p className="text-2xl font-bold tabular-nums text-brand">
-              {order.displayId}
+              {formatOrderNumber(order.displayId, order.createdAt)}
             </p>
             {order.shippingMethod && (
               <p className="mt-1 text-sm text-muted">{order.shippingMethod}</p>

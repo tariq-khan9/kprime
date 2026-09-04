@@ -39,7 +39,8 @@ const order = {
 describe("renderAdminOrderEmail", () => {
   it("leads with the cash amount to collect on a new order", () => {
     const { subject, html, text } = renderAdminOrderEmail(order, "placed")
-    expect(subject).toContain("New order #42")
+    // created_at is 2026-08-28, so the year is the order's own.
+    expect(subject).toContain("New order KP-26-42")
     expect(subject).toContain("PKR 7,100")
     expect(html).toContain("Collect PKR 7,100")
     expect(text).toContain("Collect PKR 7,100")

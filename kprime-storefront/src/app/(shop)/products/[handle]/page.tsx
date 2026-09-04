@@ -7,6 +7,7 @@ import { MobileGallerySwiper } from "@/components/page/product/MobileGallerySwip
 import { ProductBuyPanel } from "@/components/page/product/ProductBuyPanel"
 import { ProductGallery } from "@/components/page/product/ProductGallery"
 import { ProductTabs } from "@/components/page/product/ProductTabs"
+import { ProductVideo } from "@/components/page/product/ProductVideo"
 import { ProductReviews } from "@/components/page/review/ProductReviews"
 import { JsonLd } from "@/components/shared/JsonLd"
 import { ProductRail } from "@/components/shared/ProductRail"
@@ -212,6 +213,14 @@ export default async function ProductPage({
           />
         </div>
       </div>
+
+      {/* Between the gallery and the tabs, and absent entirely when the
+          product has no video — no empty frame, no placeholder. */}
+      <ProductVideo
+        videoId={product.videoId}
+        title={product.title}
+        className="mt-10"
+      />
 
       <ProductTabs product={product} className="mt-10" />
 

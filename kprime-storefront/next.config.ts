@@ -36,6 +36,12 @@ const nextConfig: NextConfig = {
      */
     dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production",
     remotePatterns: [
+      /**
+       * YouTube poster frames for the optional product video. Only ever
+       * `/vi/<id>/*` — the embed itself is an iframe and does not come through
+       * next/image at all.
+       */
+      { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
       {
         protocol: backendUrl.protocol.replace(":", "") as "http" | "https",
         hostname: backendUrl.hostname,

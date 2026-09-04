@@ -73,9 +73,22 @@ export function FilterSidebar({
   const state = parseFilters(searchParams)
   const groups = ordered(facets)
 
+  /**
+   * Nothing to filter on. The data layer empties all three when the scope is
+   * below MIN_PRODUCTS_FOR_FILTERS, so this is what a one- or two-product
+   * category looks like here.
+   *
+   * Sort still renders. It is not a filter — it never narrows the set, and this
+   * column is the only place it lives at desktop width, so dropping the whole
+   * aside would take the sort control with it. The "Filters" heading goes,
+   * because a heading over a lone sort dropdown labels it wrongly.
+   */
+  const hasFilters =
+    groups.length > 0 || priceBounds !== null || (ratingCounts?.length ?? 0) > 0
+
   return (
     <aside
-      aria-label="Filters"
+      aria-label={hasFilters ? "Filters" : "Sort"}
       className={cn(
         // Sticky below the header. The header is 72px at rest and shrinks to
         // 56px; top-20 clears the taller state.
@@ -84,9 +97,9 @@ export function FilterSidebar({
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-bold text-brand">Filters</h2>
+        {hasFilters && <h2 className="font-bold text-brand">Filters</h2>}
 
-        {hasActiveFilters(state) && (
+        {hasFilters && hasActiveFilters(state) && (
           <button
             type="button"
             onClick={() =>
@@ -107,7 +120,7 @@ export function FilterSidebar({
         {/* Sort first, as requested. Separated by a rule because it is not a
             filter — it never narrows the set, so it is deliberately excluded
             from "Clear all" and from the active-filter count. */}
-        <div className="border-b border-line pb-3">
+        <div className={cn(hasFilters && "border-b border-line pb-3")}>
           <SortDropdown />
         </div>
 
