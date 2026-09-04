@@ -55,7 +55,7 @@ export function Logo({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         variant === "reversed"
           ? "focus-visible:ring-cream focus-visible:ring-offset-brand"
-          : "focus-visible:ring-brand focus-visible:ring-offset-header",
+          : "focus-visible:ring-brand focus-visible:ring-offset-brand",
         className
       )}
     >

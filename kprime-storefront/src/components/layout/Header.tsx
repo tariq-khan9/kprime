@@ -34,7 +34,7 @@ export function Header({ tree }: { tree: CategoryNode[] }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b border-line bg-header",
+        "sticky top-0 z-40 w-full border-b border-brand-light/40 bg-header",
         scrolled && "shadow-sm"
       )}
     >

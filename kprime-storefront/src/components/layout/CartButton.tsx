@@ -31,9 +31,9 @@ export function CartButton({ className }: { className?: string }) {
       // screen reader announces "Cart, 3 items" instead of just "Cart".
       aria-label={count > 0 ? `Cart, ${count} items` : "Cart"}
       className={cn(
-        "relative flex size-11 items-center justify-center rounded-md text-brand",
-        "hover:bg-brand/5 focus-visible:outline-none focus-visible:ring-2",
-        "focus-visible:ring-brand",
+        "relative flex size-11 items-center justify-center rounded-md text-cream",
+        "hover:bg-cream/10 focus-visible:outline-none focus-visible:ring-2",
+        "focus-visible:ring-cream",
         className
       )}
     >

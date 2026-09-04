@@ -78,9 +78,9 @@ export function CategoryMegaMenu({ tree, className }: CategoryMegaMenuProps) {
             <Link
               href={`/categories/${top.handle}`}
               className={cn(
-                "flex h-11 items-center rounded-md px-3 font-medium text-brand",
-                "transition-colors hover:bg-brand/5",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                "flex h-11 items-center rounded-md px-3 font-medium text-cream",
+                "transition-colors hover:bg-cream/10",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream"
               )}
             >
               {top.name}
@@ -89,7 +89,7 @@ export function CategoryMegaMenu({ tree, className }: CategoryMegaMenuProps) {
             {top.children.length > 0 && (
               <div
                 className={cn(
-                  "absolute inset-x-0 top-full z-40 border-t border-line bg-paper shadow-lg",
+                  "absolute inset-x-0 top-full z-40 border-t border-brand-light/40 bg-paper shadow-lg",
                   // Fades and slides down. `invisible` rather than `hidden` so
                   // there is something to transition from, and it still cannot
                   // be clicked or tabbed into while closed.
