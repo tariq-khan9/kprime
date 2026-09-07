@@ -1,12 +1,11 @@
 import { Container } from "@/components/layout/Container"
-import { BrandStrip } from "@/components/page/home/BrandStrip"
 import { CategoryRail } from "@/components/page/home/CategoryRail"
 import { HeroCarousel } from "@/components/page/home/HeroCarousel"
 import { NewsletterSignup } from "@/components/page/home/NewsletterSignup"
 import { PromoBannerPair } from "@/components/page/home/PromoBannerPair"
 import { JsonLd } from "@/components/shared/JsonLd"
 import { ProductRail } from "@/components/shared/ProductRail"
-import { getCategoryTree } from "@/lib/data/categories"
+import { SITE } from "@/config/site"
 import { organization } from "@/lib/seo/structured-data"
 import { getCollectionByHandle } from "@/lib/data/collections"
 import { getTagIdsByValue, searchProducts } from "@/lib/data/products"
@@ -22,6 +21,15 @@ import { getTagIdsByValue, searchProducts } from "@/lib/data/products"
  * Adding it again would show it twice.
  */
 export const revalidate = 3600
+
+/**
+ * Home is the one page where a canonical of "/" is correct. It used to inherit
+ * that from the root layout, which meant every other page inherited it too —
+ * see the note in `app/layout.tsx`.
+ */
+export const metadata = {
+  alternates: { canonical: "/" },
+}
 
 /**
  * The three rails task 56 names.
@@ -48,8 +56,6 @@ const RAILS: Rail[] = [
 ]
 
 export default async function HomePage() {
-  const tree = await getCategoryTree()
-
   const rails = await Promise.all(
     RAILS.map(async (rail) => {
       // Every branch below resolves to a SCOPE or to null, and null means an
@@ -82,6 +88,25 @@ export default async function HomePage() {
           actually reach us on (task 149). */}
       <JsonLd data={organization()} />
 
+      {/*
+        The page's only <h1>, and deliberately not a visible one.
+
+        The home page had none at all. The obvious fix — promoting the hero's
+        heading — does not work here: HeroCarousel renders every slide TWICE,
+        because the duplicate set is what makes the loop seamless, so that would
+        emit ten <h1>s with five of them inside aria-hidden clones. A rotating
+        carousel has no one heading that can honestly serve as the page title
+        anyway.
+
+        `sr-only` keeps it out of the visual design while leaving it in the
+        document for crawlers and screen readers, which is exactly who it is
+        for.
+      */}
+      <h1 className="sr-only">
+        {SITE.name} — electronics, cosmetics, kitchenware and bedding, cash on
+        delivery across Pakistan
+      </h1>
+
       {/* Full-bleed: outside Container on purpose. */}
       <HeroCarousel />
 
@@ -99,7 +124,8 @@ export default async function HomePage() {
       </Container>
 
       <Container>
-        <CategoryRail categories={tree} />
+        {/* Curated tiles from src/static/category.ts, not the live tree. */}
+        <CategoryRail />
       </Container>
 
       {rails.slice(1).map((rail) => (
@@ -116,9 +142,14 @@ export default async function HomePage() {
         <PromoBannerPair />
       </Container>
 
-      <Container>
+      {/* Brand strip hidden for now — the logos in `static/brands.ts` are
+          placeholders, and showing brands the shop does not actually stock
+          reads as a claim rather than decoration. The component and its data
+          are untouched; delete these two comment lines and restore the
+          <Container> below to bring it back. */}
+      {/* <Container>
         <BrandStrip />
-      </Container>
+      </Container> */}
 
       <Container>
         <NewsletterSignup />

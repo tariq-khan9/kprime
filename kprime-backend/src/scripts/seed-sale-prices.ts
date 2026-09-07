@@ -28,11 +28,14 @@ const TITLE = "Demo sale";
 // Varied on purpose. A single discount depth across every card makes the badge
 // look like a template rather than a price.
 const SALE_PRICES: { handle: string; amount: number }[] = [
-  { handle: "braided-usb-c-cable", amount: 560 }, // 800 → −30%
-  { handle: "45w-usb-c-wall-charger", amount: 1650 }, // 2200 → −25%
+  { handle: "braided-usb-c-cable", amount: 420 }, // 560 → −25%
+  { handle: "45w-gan-wall-charger", amount: 1650 }, // 2200 → −25%
   { handle: "20000mah-fast-power-bank", amount: 2925 }, // 4500 → −35%
-  { handle: "non-stick-frying-pan", amount: 3230 }, // 3800 → −15%
-  { handle: "microfibre-pillow", amount: 1710 }, // 1900 → −10%
+  { handle: "non-stick-frying-pan", amount: 3315 }, // 3900 → −15%
+  { handle: "microfibre-pillow", amount: 1620 }, // 1800 → −10%
+  { handle: "cotton-bedsheet-set", amount: 4320 }, // 5400 → −20%
+  { handle: "portable-bluetooth-speaker", amount: 3920 }, // 5600 → −30%
+  { handle: "oud-eau-de-parfum", amount: 7565 }, // 8900 → −15%
 ];
 
 export default async function seedSalePrices({ container }: ExecArgs) {

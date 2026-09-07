@@ -16,6 +16,7 @@ import {
   type OrderEmailAddress,
   type OrderEmailAmount,
 } from "./format";
+import { formatOrderNumber } from "../lib/order-number";
 
 export type { OrderEmailAddress, OrderEmailAmount };
 
@@ -29,6 +30,7 @@ export type OrderEmailItem = {
 export type OrderEmailInput = {
   /** query.graph types this as a string even though it reads as a number. */
   display_id?: string | number | null;
+  created_at?: string | Date | null;
   email?: string | null;
   currency_code?: string | null;
   /** query.graph allows null entries in the list, so they are filtered on read. */
@@ -51,7 +53,7 @@ export type OrderEmailInput = {
 
 export const renderOrderPlacedEmail = (order: OrderEmailInput) => {
   const currency = order.currency_code ?? "pkr";
-  const orderNumber = order.display_id ?? "—";
+  const orderNumber = formatOrderNumber(order.display_id, order.created_at);
   const items = (order.items ?? []).filter(
     (item): item is OrderEmailItem => Boolean(item)
   );
@@ -65,7 +67,7 @@ export const renderOrderPlacedEmail = (order: OrderEmailInput) => {
       }/order/track`
     : null;
 
-  const subject = `KPrime order #${orderNumber} confirmed — pay ${money(
+  const subject = `KPrime order ${orderNumber} confirmed — pay ${money(
     order.total,
     currency
   )} on delivery`;
@@ -108,7 +110,7 @@ export const renderOrderPlacedEmail = (order: OrderEmailInput) => {
     <tr><td>
       <h1 style="margin:0 0 4px;font-size:20px;">Thanks for your order</h1>
       <p style="margin:0 0 20px;color:#555;font-size:14px;">
-        Order <strong>#${orderNumber}</strong> is confirmed. We will contact you to arrange delivery.
+        Order <strong>${orderNumber}</strong> is confirmed. We will contact you to arrange delivery.
       </p>
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;">
@@ -141,7 +143,7 @@ export const renderOrderPlacedEmail = (order: OrderEmailInput) => {
         trackingUrl
           ? `<div style="margin-top:20px;font-size:14px;">
         <a href="${trackingUrl}" style="color:#3b82f6;">Track this order</a>
-        <span style="color:#666;"> — order #${orderNumber} and this email address are all you need.</span>
+        <span style="color:#666;"> — order ${orderNumber} and this email address are all you need.</span>
       </div>`
           : ""
       }
@@ -157,7 +159,7 @@ export const renderOrderPlacedEmail = (order: OrderEmailInput) => {
   const text = [
     `Thanks for your order`,
     ``,
-    `Order #${orderNumber} is confirmed. We will contact you to arrange delivery.`,
+    `Order ${orderNumber} is confirmed. We will contact you to arrange delivery.`,
     ``,
     ...items.map((item) => {
       const name = [item.title, item.variant_title].filter(Boolean).join(" — ");
@@ -181,7 +183,7 @@ export const renderOrderPlacedEmail = (order: OrderEmailInput) => {
       ? [
           ``,
           `Track this order: ${trackingUrl}`,
-          `You need only order #${orderNumber} and this email address.`,
+          `You need only order ${orderNumber} and this email address.`,
         ]
       : []),
     ``,

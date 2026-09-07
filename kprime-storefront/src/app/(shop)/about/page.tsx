@@ -7,6 +7,7 @@ import { SITE } from "@/config/site"
 export const metadata = {
   title: "About us",
   description: `${SITE.name} ships electronics, cosmetics, kitchenware and bedding across Pakistan, cash on delivery.`,
+  alternates: { canonical: "/about" },
 }
 
 export default function AboutPage() {

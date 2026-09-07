@@ -96,8 +96,18 @@ describe("renderOrderPlacedEmail", () => {
 
   it("shows the order number", () => {
     const { subject, html } = renderOrderPlacedEmail(baseOrder);
-    expect(subject).toContain("#42");
-    expect(html).toContain("#42");
+    // No created_at on the fixture, so this is the documented fallback: the
+    // prefix without a year, rather than a guessed one.
+    expect(subject).toContain("KP-42");
+    expect(html).toContain("KP-42");
+  });
+
+  it("takes the year from the order, not from today", () => {
+    const { subject } = renderOrderPlacedEmail({
+      ...baseOrder,
+      created_at: "2026-12-31T18:00:00.000Z",
+    });
+    expect(subject).toContain("KP-26-42");
   });
 });
 

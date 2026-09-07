@@ -18,6 +18,7 @@ export const dynamic = "force-dynamic"
 
 export const metadata = {
   title: "Track your order",
+  alternates: { canonical: "/track" },
 }
 
 export default function TrackPage() {

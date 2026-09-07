@@ -73,99 +73,19 @@ export const HELP_LINKS = [{ label: "Track your order", href: "/track" }] as con
 /* ------------------------------------------------------------------ *
  * Home page content
  *
- * PLACEHOLDER. Copy is honest — it promises nothing the store cannot do —
- * but the wording and artwork are drafts. Swapping these out is the whole
- * of the "real content" job; no component needs editing.
+ * Lives in `src/static/`, one file per section, each owning its own type
+ * alongside its data. Re-exported here so older imports keep working — new
+ * code should import from `@/static/*` directly.
  * ------------------------------------------------------------------ */
 
-export type HeroSlide = {
-  heading: string
-  subheading: string
-  ctaLabel: string
-  ctaHref: string
-  /** Tailwind gradient classes, standing in until real photography exists. */
-  gradient: string
-}
+export type { HeroSlide } from "@/static/hero"
+export { HERO_SLIDES } from "@/static/hero"
 
-export const HERO_SLIDES: HeroSlide[] = [
-  {
-    heading: "Cash on delivery, nationwide",
-    subheading: "Pay when your order reaches you. No card, no advance.",
-    ctaLabel: "Start shopping",
-    ctaHref: "/categories/electronics",
-    gradient: "from-brand to-brand-light",
-  },
-  {
-    heading: "Electronics that last",
-    subheading: "Chargers, audio and accessories with a warranty.",
-    ctaLabel: "Browse electronics",
-    ctaHref: "/categories/electronics",
-    gradient: "from-brand-light to-brand",
-  },
-  {
-    heading: "For the home",
-    subheading: "Kitchenware and bedding, delivered in 1–5 days to most cities.",
-    ctaLabel: "Browse home",
-    ctaHref: "/categories/home-and-bedding",
-    gradient: "from-brand to-action-ink",
-  },
-]
+export type { CategoryTile } from "@/static/category"
+export { CATEGORY_TILES } from "@/static/category"
 
-export type PromoBanner = {
-  heading: string
-  subheading: string
-  href: string
-  gradient: string
-}
+export type { PromoBanner } from "@/static/promo"
+export { PROMO_BANNERS } from "@/static/promo"
 
-export const PROMO_BANNERS: [PromoBanner, PromoBanner] = [
-  {
-    heading: "Kitchen essentials",
-    subheading: "Cookware, appliances and storage",
-    href: "/categories/kitchenware",
-    gradient: "from-sale/80 to-sale",
-  },
-  {
-    heading: "Everyday cosmetics",
-    subheading: "Skincare, makeup and fragrances",
-    href: "/categories/cosmetics",
-    gradient: "from-brand-light to-brand",
-  },
-]
-
-/**
- * PLACEHOLDER brand names.
- *
- * The catalogue records no manufacturer — the product tags are attributes
- * (Imported, Bestseller), not brands. Rendered as text lockups rather than
- * invented logo images, so nobody mistakes them for real branding.
- *
- * `href` points at a category until task 57 introduces the `?brand=` param.
- */
-export type Brand = { name: string; href: string; logo: string }
-
-/**
- * PLACEHOLDER logos.
- *
- * The files in public/brands/ are wordmarks generated for this build — each
- * brand's NAME as plain type beside a simple geometric mark. They are NOT
- * reproductions of anyone's trademarked logo artwork, which matters twice
- * over: the catalogue records no manufacturer, so the shop does not currently
- * stock any of these, and displaying a real logo for a brand you do not carry
- * is a trademark problem rather than a theoretical one.
- *
- * Replace with real supplied logo files once the brands are genuine. They use
- * `currentColor`, so the strip's muted-to-brand hover keeps working.
- *
- * Annotated rather than `as const`: the literal tuple type would make
- * BrandStrip's empty-list guard a compile error, since TypeScript would know
- * the length is exactly 6.
- */
-export const BRANDS: Brand[] = [
-  { name: "Samsung", logo: "/brands/samsung.svg", href: "/categories/electronics" },
-  { name: "Lenovo", logo: "/brands/lenovo.svg", href: "/categories/computer-accessories" },
-  { name: "HP", logo: "/brands/hp.svg", href: "/categories/computer-accessories" },
-  { name: "Anker", logo: "/brands/anker.svg", href: "/categories/mobile-accessories" },
-  { name: "Philips", logo: "/brands/philips.svg", href: "/categories/kitchen-appliances" },
-  { name: "Logitech", logo: "/brands/logitech.svg", href: "/categories/computer-accessories" },
-]
+export type { Brand } from "@/static/brands"
+export { BRANDS } from "@/static/brands"

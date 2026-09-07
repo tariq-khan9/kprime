@@ -14,6 +14,7 @@ export const metadata = {
   title: "Frequently asked questions",
   description:
     "Ordering, cash on delivery, delivery times and returns, answered.",
+  alternates: { canonical: "/faq" },
 }
 
 /**

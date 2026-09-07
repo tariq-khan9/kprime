@@ -10,6 +10,7 @@ import { WHATSAPP_NUMBER, whatsappLink } from "@/config/site"
 import { getOrder } from "@/lib/data/orders"
 import { formatPhoneForDisplay } from "@/lib/identity/phone"
 import { formatPKR } from "@/lib/utils/format"
+import { formatOrderNumber } from "@/lib/utils/order-number"
 
 /**
  * The order receipt.
@@ -65,7 +66,9 @@ export default async function OrderConfirmedPage({
   return (
     <Container className="py-8">
       <div className="mx-auto flex max-w-2xl flex-col gap-6">
-        <OrderConfirmationHero orderNumber={order.displayId} />
+        <OrderConfirmationHero
+          orderNumber={formatOrderNumber(order.displayId, order.createdAt)}
+        />
 
         {/* Above the fold on a phone, not at the bottom. Someone who scrolls
             past it and closes the tab has lost their only copy. */}
@@ -148,7 +151,10 @@ export default async function OrderConfirmedPage({
           <Button variant="secondary" asChild className="mt-3">
             <a
               href={whatsappLink(
-                `Hi, I have a question about order ${order.displayId}.`
+                `Hi, I have a question about order ${formatOrderNumber(
+                  order.displayId,
+                  order.createdAt
+                )}.`
               )}
               target="_blank"
               rel="noopener noreferrer"

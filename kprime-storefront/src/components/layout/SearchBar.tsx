@@ -293,9 +293,9 @@ export function SearchBar({ className }: { className?: string }) {
         aria-expanded={expanded}
         onClick={() => setExpanded(true)}
         className={cn(
-          "flex size-11 items-center justify-center rounded-md text-brand",
-          "hover:bg-brand/5 focus-visible:outline-none focus-visible:ring-2",
-          "focus-visible:ring-brand lg:hidden"
+          "flex size-11 items-center justify-center rounded-md text-cream",
+          "hover:bg-cream/10 focus-visible:outline-none focus-visible:ring-2",
+          "focus-visible:ring-cream lg:hidden"
         )}
       >
         <SearchIcon className="size-5" />
@@ -312,7 +312,7 @@ export function SearchBar({ className }: { className?: string }) {
               close()
               setExpanded(false)
             }}
-            className="flex size-11 shrink-0 items-center justify-center rounded-md text-brand hover:bg-brand/5"
+            className="flex size-11 shrink-0 items-center justify-center rounded-md text-cream hover:bg-cream/10"
           >
             <CloseIcon className="size-5" />
           </button>

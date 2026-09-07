@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import { PROMO_BANNERS } from "@/config/site"
+import { PROMO_BANNERS } from "@/static/promo"
 import { cn } from "@/lib/utils/format"
 
 /**

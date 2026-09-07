@@ -9,6 +9,7 @@ import {
 import { filterByPrice, priceBoundsOf } from "@/lib/filters/price"
 import { byRatingDesc, filterByRating, ratingCounts } from "@/lib/filters/rating"
 import { sdk } from "@/lib/sdk"
+import { youtubeIdFrom } from "@/lib/utils/youtube"
 
 /**
  * Trimmed to what ProductCard renders, per §2.1 — the full result set for a
@@ -137,6 +138,12 @@ export type ProductDetail = {
   type: string | null
   categories: { id: string; name: string; handle: string }[]
   metadata: Record<string, unknown> | null
+  /**
+   * YouTube id parsed from `metadata.video_url`, or null when the field is
+   * absent or unparseable. The raw URL deliberately does not reach the page —
+   * see `lib/utils/youtube.ts`.
+   */
+  videoId: string | null
   /** Cheapest variant, for the headline price before one is selected. */
   price: number | null
   originalPrice: number | null
@@ -189,7 +196,29 @@ export type SearchProductsResult = {
   ratingCounts: { minimum: number; count: number }[]
 }
 
+/**
+ * Admin sets this metadata key on a product to attach a video. Metadata is
+ * unqueryable through the store API, which is fine — this is read on one
+ * product at a time, never filtered on.
+ */
+export const PRODUCT_VIDEO_KEY = "video_url"
+
 const DEFAULT_PAGE_SIZE = 24
+
+/**
+ * Below this many products in scope, the whole filter UI is suppressed.
+ *
+ * A sidebar cannot narrow a set you can already see in one glance. Worse, it
+ * actively misleads: a single product offering `30ml` and `50ml` renders two
+ * rows each counting `1`, which reads as two products because facet counts
+ * overlap rather than partition the set.
+ *
+ * **Measured against the scope, never the filtered result.** Gating on the
+ * post-filter count would let a shopper narrow a large category down to two
+ * items and have the controls that got them there disappear, stranding them
+ * with no way back except the browser's back button.
+ */
+export const MIN_PRODUCTS_FOR_FILTERS = 3
 
 /**
  * The store's single region. Calculated prices only come back when the query
@@ -213,15 +242,18 @@ const getRegionId = unstable_cache(
   { tags: ["regions"] }
 )
 
-function toSummary(product: Record<string, any>): ProductSummary {
-  const variants: any[] = product.variants ?? []
+function toSummary(product: RawProduct): ProductSummary {
+  const variants: RawVariant[] = product.variants ?? []
 
   const priced = variants
     .map((variant) => variant.calculated_price)
-    .filter((price) => price && typeof price.calculated_amount === "number")
+    .filter(
+      (price): price is PricedAmount =>
+        Boolean(price) && typeof price?.calculated_amount === "number"
+    )
 
   // "From" pricing: the cheapest variant is what the card shows.
-  const cheapest = priced.reduce<any>(
+  const cheapest = priced.reduce<PricedAmount | null>(
     (low, price) =>
       low === null || price.calculated_amount < low.calculated_amount
         ? price
@@ -251,11 +283,13 @@ function toSummary(product: Record<string, any>): ProductSummary {
         ? original
         : null,
     currencyCode: cheapest?.currency_code ?? "pkr",
-    createdAt: product.created_at,
-    tags: (product.tags ?? []).map((tag: any) => tag.value).filter(Boolean),
-    options: (product.options ?? []).map((option: any) => ({
+    createdAt: product.created_at ?? "",
+    tags: (product.tags ?? [])
+      .map((tag) => tag.value)
+      .filter((value): value is string => Boolean(value)),
+    options: (product.options ?? []).map((option) => ({
       title: option.title,
-      values: (option.values ?? []).map((value: any) => ({
+      values: (option.values ?? []).map((value) => ({
         id: value.id,
         value: value.value,
       })),
@@ -350,7 +384,11 @@ async function fetchNativeSet(query: NativeQuery): Promise<ProductSummary[]> {
       offset,
     })
 
-    summaries.push(...products.map(toSummary))
+    // The SDK types `variants.calculated_price` far more loosely than what the
+    // `fields` string above actually asks for, so its StoreProduct does not
+    // structurally satisfy RawProduct. Casting once at this boundary keeps the
+    // projection itself fully typed, rather than spreading `any` through it.
+    summaries.push(...(products as unknown as RawProduct[]).map(toSummary))
     offset += products.length
 
     if (products.length === 0 || summaries.length >= count) {
@@ -467,9 +505,14 @@ export async function searchProducts(
   // products that are no longer in the result set.
   const all = params.q?.trim() ? filterByTitle(fetched, params.q) : fetched
 
+  // The scope decides whether filtering is offered at all — see
+  // MIN_PRODUCTS_FOR_FILTERS. `all` is pre-filter by construction, so a shopper
+  // who has already narrowed the set keeps every control they used.
+  const filterable = all.length >= MIN_PRODUCTS_FOR_FILTERS
+
   // Bounds from the UNFILTERED set — deriving them from the filtered one would
   // let the slider shrink its own range on every drag, with no way back.
-  const priceBounds = priceBoundsOf(all)
+  const priceBounds = filterable ? priceBoundsOf(all) : null
 
   const priced = filterByPrice(all, {
     min: params.minPrice,
@@ -482,13 +525,13 @@ export async function searchProducts(
   // current selection: tick Black and every other colour vanishes, leaving no
   // way to widen the choice. Deriving them before price filtering would offer
   // values that cannot produce a result.
-  const facets = deriveFacets(priced)
+  const facets = filterable ? deriveFacets(priced) : []
 
   const faceted = filterByFacets(priced, params.facets ?? {})
 
   // Counts come from the set BEFORE rating filtering, so the sidebar options do
   // not collapse onto the current selection — same rule as the facet counts.
-  const ratings = ratingCounts(faceted)
+  const ratings = filterable ? ratingCounts(faceted) : []
 
   const matched = filterByRating(faceted, params.minRating ?? null)
 
@@ -591,7 +634,16 @@ type RawProduct = {
   type?: { value?: string } | null
   categories?: { id: string; name: string; handle: string }[] | null
   metadata?: Record<string, unknown> | null
+  /** Only the card projection reads this — it is what "newest" sorts on. */
+  created_at?: string
 }
+
+/**
+ * A price that has survived the `typeof calculated_amount === "number"` filter.
+ * Narrowing the property is what lets the reduce below compare amounts without
+ * a non-null assertion on every access.
+ */
+type PricedAmount = RawPrice & { calculated_amount: number }
 
 function toVariantDetail(variant: RawVariant): ProductVariantDetail {
   const price = variant.calculated_price ?? null
@@ -668,6 +720,9 @@ function toDetail(product: RawProduct): ProductDetail {
       handle: category.handle,
     })),
     metadata: product.metadata ?? null,
+    // Parsed here rather than in the component so an invalid URL is null before
+    // it ever reaches the UI, and the page has one thing to check.
+    videoId: youtubeIdFrom(product.metadata?.[PRODUCT_VIDEO_KEY]),
     price: cheapest?.price ?? null,
     originalPrice: cheapest?.originalPrice ?? null,
     currencyCode: cheapest?.currencyCode ?? "pkr",

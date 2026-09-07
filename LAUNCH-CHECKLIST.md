@@ -10,12 +10,15 @@ so none of them is discovered by a customer first.
 
 ## 1. Content and identity
 
-- [ ] **BLOCKER — Real WhatsApp number.** `NEXT_PUBLIC_WHATSAPP_NUMBER` is still
-      the placeholder `923000000000`. It appears on the float button, the
-      confirmation receipt, the contact page, the returns page and every "message
-      us" link. The `Organization` structured data deliberately omits the contact
-      point while it is a placeholder, so setting the real number also switches
-      that on.
+- [x] **Real WhatsApp number set** — `NEXT_PUBLIC_WHATSAPP_NUMBER=923149698996`.
+      Verified across all twelve touchpoints (float button, footer, contact,
+      order confirmation, track, returns, privacy, both error boundaries,
+      checkout, and the `Organization` structured data); the placeholder appears
+      on no page. The suppressed `contactPoint` is now emitted as
+      `+923149698996`.
+      **Still to do by hand:** tap the button on a real phone and confirm the
+      chat opens — the href is proven correct, but only a device proves WhatsApp
+      actually opens it.
 - [ ] **BLOCKER — `NEXT_PUBLIC_BASE_URL`** is `http://localhost:8000`. Canonical
       URLs, the sitemap, and every Open Graph image point at localhost, so a link
       shared on WhatsApp previews as broken.
@@ -31,14 +34,19 @@ so none of them is discovered by a customer first.
 
 ## 2. Catalogue
 
-- [ ] *deferred* — **Task 8: the option sheet.** Option titles and values are
-      load-bearing and unforgiving: `Colour` never `Colour`/`Color` mixed, `Red`
-      never `red`, `128GB` never `128 GB`. A typo creates a phantom filter.
-- [ ] *deferred* — **Task 9: the real category tree** and its globally unique
-      handles. The four demo categories from `add-demo-categories.ts` carry no
-      products and should be deleted.
+- [x] **Task 8: the option sheet.** `OPTION-SHEET.md` is written and now keyed
+      by leaf category, because that is the level at which option-uniformity is
+      enforced. `buildCatalogue()` throws if a leaf's products disagree.
+- [x] **Task 9: the category tree.** Three levels, 52 categories, globally
+      unique handles. The four small top-level categories (Sports & Outdoors,
+      Toys & Games, Stationery, Health & Wellness) now carry products and are
+      deliberate test cases for `MIN_PRODUCTS_FOR_FILTERS`.
+      *Unverified:* whether every category has an explicit `rank` — Medusa
+      appears to auto-assign it in creation order, but task 9 asks for it
+      explicitly and nobody has confirmed it.
 - [ ] Remove demo data: `add-demo-collections.ts`, `seed-sale-prices.ts`
-      ("Demo sale" price list), the 7 seeded reviews, and any test orders.
+      ("Demo sale" price list) and any test orders. The seeded reviews are
+      already gone — `reset-catalogue.ts` clears them.
 
 ## 3. Shipping and money
 
@@ -92,12 +100,28 @@ so none of them is discovered by a customer first.
   fix.
 - **`/track` rate limiting is per-process, in memory.** Fine on one instance;
   behind two it must move to Redis, which the project already runs.
-- **Lighthouse (task 151) and real-device testing (task 152) have not been run.**
-  Both need a browser and a physical mid-range Android on a real network.
-- **Playwright smoke tests (task 157)** are written but the dependency is not
-  installed.
+- **Real-device testing (task 152) has not been run.** It needs a physical
+  mid-range Android on a real network, not an emulator.
+- **Lighthouse (task 151) is only half done.** Core Web Vitals were measured on
+  a production build under Slow 4G + 4x CPU throttling and all five routes came
+  back green (LCP 0.8–1.4s, CLS ~0). No formal accessibility score has been
+  taken, which is the other half of what task 151 asks for.
+- **Tasks 153 (form validation) and 154 (stock and race conditions) are
+  untouched.**
+- **No Content-Security-Policy.** The other five security headers are set in
+  `next.config.ts`; CSP was deliberately left out because Next's inline
+  bootstrap and the YouTube facade both need allowances that have to be worked
+  out and tested, and a wrong CSP fails silently.
 
-## 7. The final test
+## 7. Done since this list was written
+
+- SEO: every page now emits its own canonical (they all claimed to be the
+  homepage), the home page has an `<h1>`, category and product descriptions no
+  longer vanish when Medusa returns `""`, and five security headers are set.
+- Playwright smoke suite (task 157) installed and passing 5/5 against a seeded
+  backend, including a real order placed and tracked.
+
+## 8. The final test
 
 Place a real order as a customer, on a phone, on mobile data. Take the
 confirmation call yourself. Dispatch it. Track it. If that works end to end,

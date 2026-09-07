@@ -14,6 +14,48 @@ const backendUrl = new URL(
 );
 
 const nextConfig: NextConfig = {
+  /**
+   * Stop advertising the framework. `X-Powered-By: Next.js` tells an attacker
+   * which CVE list to read first and buys nothing in return.
+   */
+  poweredByHeader: false,
+
+  /**
+   * Security headers. There were none at all before this.
+   *
+   * **No Content-Security-Policy here on purpose.** Next inlines its own
+   * bootstrap script and the product-video facade loads a YouTube iframe, so a
+   * CSP needs real allowances worked out and tested — and a wrong one breaks
+   * the page silently, with no error anywhere. It deserves its own pass rather
+   * than a guessed line here.
+   *
+   * HSTS does nothing on localhost; it starts mattering the day this is served
+   * over HTTPS on a real domain, which is why it is set now rather than being
+   * remembered later.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // The storefront is never meant to be framed. Clickjacking a COD
+          // checkout is a real attack, not a theoretical one.
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+        ],
+      },
+    ]
+  },
+
   images: {
     /**
      * AVIF first, WebP second, original last.
@@ -36,6 +78,12 @@ const nextConfig: NextConfig = {
      */
     dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production",
     remotePatterns: [
+      /**
+       * YouTube poster frames for the optional product video. Only ever
+       * `/vi/<id>/*` — the embed itself is an iframe and does not come through
+       * next/image at all.
+       */
+      { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
       {
         protocol: backendUrl.protocol.replace(":", "") as "http" | "https",
         hostname: backendUrl.hostname,

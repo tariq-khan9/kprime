@@ -5,6 +5,7 @@ import {
   type OrderEmailAmount,
   type OrderEmailAddress,
 } from "./format";
+import { formatOrderNumber } from "../lib/order-number";
 
 /**
  * Order notification for the shop owner.
@@ -48,7 +49,7 @@ export const renderAdminOrderEmail = (
   event: AdminOrderEvent
 ) => {
   const currency = order.currency_code ?? "pkr";
-  const orderNumber = order.display_id ?? "—";
+  const orderNumber = formatOrderNumber(order.display_id, order.created_at);
   const items = (order.items ?? []).filter(
     (item): item is AdminOrderEmailItem => Boolean(item)
   );
@@ -64,8 +65,8 @@ export const renderAdminOrderEmail = (
   const placed = event === "placed";
 
   const subject = placed
-    ? `New order #${orderNumber} — ${money(order.total, currency)} to collect`
-    : `Order #${orderNumber} cancelled — ${money(order.total, currency)}`;
+    ? `New order ${orderNumber} — ${money(order.total, currency)} to collect`
+    : `Order ${orderNumber} cancelled — ${money(order.total, currency)}`;
 
   const itemRows = items
     .map((item) => {
@@ -102,7 +103,7 @@ export const renderAdminOrderEmail = (
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;padding:24px;border-radius:8px;">
     <tr><td>
       <h1 style="margin:0 0 4px;font-size:20px;">
-        ${placed ? "New order" : "Order cancelled"} #${orderNumber}
+        ${placed ? "New order" : "Order cancelled"} ${orderNumber}
       </h1>
       <p style="margin:0 0 16px;color:#555;font-size:13px;">
         ${order.created_at ? new Date(order.created_at).toUTCString() : ""}
@@ -171,7 +172,7 @@ export const renderAdminOrderEmail = (
 </html>`;
 
   const text = [
-    `${placed ? "New order" : "Order cancelled"} #${orderNumber}`,
+    `${placed ? "New order" : "Order cancelled"} ${orderNumber}`,
     ``,
     placed
       ? `Collect ${money(order.total, currency)} in cash on delivery.`

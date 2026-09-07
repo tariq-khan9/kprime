@@ -3,55 +3,6 @@ import Link from "next/link"
 import type { CategoryNode } from "@/lib/data/categories"
 import { cn } from "@/lib/utils/format"
 
-/**
- * One level of the tree, inline and pipe-separated:
- *
- *   Skincare | Makeup | Fragrances
- *
- * Recursive, so a third level renders beneath its parents in muted text rather
- * than being dropped — the tree is whatever admin returns, and a hardcoded two
- * levels would silently lose a third the day someone adds one.
- */
-function InlineLevel({ nodes, depth }: { nodes: CategoryNode[]; depth: number }) {
-  if (nodes.length === 0) {
-    return null
-  }
-
-  const deeper = nodes.filter((node) => node.children.length > 0)
-
-  return (
-    <>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {nodes.map((node, i) => (
-          <span key={node.id} className="flex items-center gap-x-3">
-            {i > 0 && (
-              <span aria-hidden className="text-line">
-                |
-              </span>
-            )}
-            <Link
-              href={`/categories/${node.handle}`}
-              className={cn(
-                "whitespace-nowrap hover:text-brand-light hover:underline",
-                depth === 0 ? "font-medium text-brand" : "text-sm text-muted"
-              )}
-            >
-              {node.name}
-            </Link>
-          </span>
-        ))}
-      </div>
-
-      {deeper.map((node) => (
-        <div key={node.id} className="flex flex-wrap items-baseline gap-x-3">
-          <span className="text-sm text-muted">{node.name}:</span>
-          <InlineLevel nodes={node.children} depth={depth + 1} />
-        </div>
-      ))}
-    </>
-  )
-}
-
 export type CategoryMegaMenuProps = {
   tree: CategoryNode[]
   className?: string
@@ -60,6 +11,14 @@ export type CategoryMegaMenuProps = {
 /**
  * Desktop hover navigation. Hidden below lg — MobileNav covers that range, and
  * the two never render together.
+ *
+ * **Shows exactly one level down: the top category's direct children.**
+ * Categories now run three deep (top → subcategory → leaf, e.g.
+ * Electronics → Mobile Accessories → Chargers). Drilling the panel down to the
+ * leaves as well put nine names under three labels in one hover strip — no one
+ * reads a menu that deep on a screen this transient. A shopper who wants a leaf
+ * lands on the subcategory in one click and picks it there, where it has room
+ * to be a real page instead of a line of text.
  *
  * Pure CSS hover, no state: that is what makes the panel fade in smoothly
  * rather than appearing instantly, and it keeps this a server component. The
@@ -78,9 +37,9 @@ export function CategoryMegaMenu({ tree, className }: CategoryMegaMenuProps) {
             <Link
               href={`/categories/${top.handle}`}
               className={cn(
-                "flex h-11 items-center rounded-md px-3 font-medium text-brand",
-                "transition-colors hover:bg-brand/5",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                "flex h-11 items-center rounded-md px-3 font-medium text-cream",
+                "transition-colors hover:bg-cream/10",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream"
               )}
             >
               {top.name}
@@ -89,7 +48,7 @@ export function CategoryMegaMenu({ tree, className }: CategoryMegaMenuProps) {
             {top.children.length > 0 && (
               <div
                 className={cn(
-                  "absolute inset-x-0 top-full z-40 border-t border-line bg-paper shadow-lg",
+                  "absolute inset-x-0 top-full z-40 border-t border-brand-light/40 bg-paper shadow-lg",
                   // Fades and slides down. `invisible` rather than `hidden` so
                   // there is something to transition from, and it still cannot
                   // be clicked or tabbed into while closed.
@@ -99,11 +58,22 @@ export function CategoryMegaMenu({ tree, className }: CategoryMegaMenuProps) {
                   "group-focus-within:opacity-100"
                 )}
               >
-                {/* Compact: one wrapped row rather than a grid of columns, so
-                    the panel is a strip under the header instead of a full
-                    drop-down that covers the page. */}
-                <div className="mx-auto flex max-w-7xl flex-col gap-2 px-8 py-4">
-                  <InlineLevel nodes={top.children} depth={0} />
+                <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-8 py-4">
+                  {top.children.map((sub, i) => (
+                    <span key={sub.id} className="flex items-center gap-x-3">
+                      {i > 0 && (
+                        <span aria-hidden className="text-line">
+                          |
+                        </span>
+                      )}
+                      <Link
+                        href={`/categories/${sub.handle}`}
+                        className="whitespace-nowrap font-medium text-brand hover:text-brand-light hover:underline"
+                      >
+                        {sub.name}
+                      </Link>
+                    </span>
+                  ))}
                 </div>
               </div>
             )}

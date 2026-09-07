@@ -1,10 +1,11 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/Button"
-import { HERO_SLIDES, type HeroSlide } from "@/config/site"
+import { HERO_SLIDES, type HeroSlide } from "@/static/hero"
 import { cn } from "@/lib/utils/format"
 
 const ADVANCE_MS = 7000
@@ -164,15 +165,71 @@ export function HeroCarousel({ className }: { className?: string }) {
             className="w-full shrink-0 snap-start"
           >
             {/* Just over three quarters of the viewport, capped — on a tall
-                desktop monitor 78vh is 800px+ of gradient around one heading. */}
+                desktop monitor 78vh is 800px+ of gradient around one heading.
+                The height is fixed here, before any image loads, so a
+                photograph arriving late cannot shift the page. */}
             <div
               onClick={onSlideClick}
               className={cn(
-                "flex min-h-[78vh] max-h-[46rem] cursor-pointer items-center bg-gradient-to-br",
+                "relative flex min-h-[78vh] max-h-[46rem] cursor-pointer items-center overflow-hidden bg-gradient-to-br",
+                // Kept even on an image slide: it shows through until the photo
+                // paints, so the slide is never a white box.
                 slide.gradient
               )}
             >
-              <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+              {slide.image && (
+                <>
+                  <Image
+                    src={slide.image}
+                    // Empty on a clone: the same photograph is already described
+                    // on the real slide, and the clone is aria-hidden.
+                    alt={clone ? "" : (slide.imageAlt ?? "")}
+                    fill
+                    // Preload the FIRST REAL slide only — it is the LCP
+                    // candidate. Marking them all priority would preload ten
+                    // images and have the one that matters compete with nine.
+                    priority={i === 0}
+                    // The other real slides load eagerly rather than lazily.
+                    //
+                    // Each slide is 100vw wide, so slides 2-5 sit outside the
+                    // viewport horizontally and native lazy loading never
+                    // fetches them — the carousel showed slide 1 and four dark
+                    // panels, because the scrim was covering an unloaded image.
+                    //
+                    // Eager is right here: the carousel auto-advances every 7s,
+                    // so every slide is needed within half a minute. Clones stay
+                    // lazy — they point at the same files, so by the time the
+                    // loop reaches them the browser has them cached.
+                    loading={!clone && i !== 0 ? "eager" : undefined}
+                    // Eager, but explicitly low priority. Next emits a preload
+                    // link for every eager image, so without this the four
+                    // off-screen slides would compete with the LCP image for
+                    // bandwidth — worst on the slow mobile connections most of
+                    // this shop's traffic arrives on.
+                    fetchPriority={!clone && i !== 0 ? "low" : undefined}
+                    // Full-bleed at every width.
+                    sizes="100vw"
+                    className="object-cover"
+                  />
+
+                  {/* The scrim. Without it the heading's legibility depends on
+                      whatever happens to be behind those words in the photo —
+                      one light-toned image and the first thing every visitor
+                      sees is unreadable. Image slides only; dimming a gradient
+                      would just muddy the copy. */}
+                  {/* 75%, not less. Measured against all five photographs: at
+                      60% the subheading — cream at 80% opacity — bottomed out
+                      at 3.29:1 against the brightest part of the darkest image,
+                      under the 4.5:1 WCAG AA needs for normal text. 75% is the
+                      first level where every slide clears it, worst case
+                      5.05:1. */}
+                  <div aria-hidden className="absolute inset-0 bg-brand/75" />
+                </>
+              )}
+
+              {/* Relative so the copy stacks above the image and scrim without
+                  needing a z-index. */}
+              <div className="relative mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
                 <div className="max-w-lg">
                   <h2 className="text-2xl font-bold text-cream sm:text-3xl lg:text-4xl">
                     {slide.heading}

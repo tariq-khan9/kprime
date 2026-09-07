@@ -10,6 +10,7 @@ export const metadata = {
   title: "Privacy",
   description:
     "What we collect, why, and what we do not do with it.",
+  alternates: { canonical: "/privacy" },
 }
 
 /**

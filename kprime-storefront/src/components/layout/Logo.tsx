@@ -4,8 +4,14 @@ import Link from "next/link"
 import { SITE } from "@/config/site"
 import { cn } from "@/lib/utils/format"
 
-/** The file's real pixel size — Next needs it to reserve the box. */
-const NATURAL = { width: 275, height: 239 }
+/**
+ * The file's real pixel size — Next needs it to reserve the box.
+ *
+ * Must match `public/logo.png` exactly. The height classes below drive the
+ * rendered size and the width follows this ratio, so a stale value here reserves
+ * the wrong space and the header shifts as the image loads.
+ */
+const NATURAL = { width: 358, height: 71 }
 
 export type LogoProps = {
   /**
@@ -55,7 +61,7 @@ export function Logo({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         variant === "reversed"
           ? "focus-visible:ring-cream focus-visible:ring-offset-brand"
-          : "focus-visible:ring-brand focus-visible:ring-offset-header",
+          : "focus-visible:ring-brand focus-visible:ring-offset-brand",
         className
       )}
     >
@@ -70,7 +76,11 @@ export function Logo({
         // arrives, so the header does not jump as it loads.
         className={cn(
           "w-auto transition-[height] duration-200",
-          compact ? "h-9" : "h-9 sm:h-12"
+          // Wide wordmark, 5:1. The supplied file carried ~60% transparent
+          // padding, so it was trimmed to its ink — see public/hero-style note
+          // in Logo docs. These heights are therefore all mark, not box: h-6 is
+          // 24px of actual lettering where the untrimmed file gave 15px at h-10.
+          compact ? "h-5" : "h-6 sm:h-8"
         )}
       />
     </Link>

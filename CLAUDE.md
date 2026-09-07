@@ -48,7 +48,7 @@ Navy brand, amber action, red sale, green success, white page. Every colour has 
 |---|---|---|
 | `paper` | `#FFFFFF` | Page background |
 | `cream` | `#F6F4EF` | Panels that lift off the page — trust strip, newsletter |
-| `header` | `#FDF1DA` | Header bar only. Amber washed to near-white — **not** a CTA colour |
+| `header` | `#0F1E3D` | Header bar only. Same navy as `brand`; foregrounds on it are `cream` |
 | `brand` | `#0F1E3D` | All text, headings, prices, footer, announcement bar, icons, active nav |
 | `brand.light` | `#1E3A6B` | Hover on navy surfaces |
 | `action` | `#F2A007` | Primary CTA only |
@@ -61,8 +61,9 @@ Navy brand, amber action, red sale, green success, white page. Every colour has 
 
 1. **Navy replaces black for text.** Never `#000`, `#333`, `text-gray-900`.
 2. **Amber only ever means "act on this."** Buttons and nothing else, ~2% of the page.
-   The `header` token is the one exception and is diluted to near-white for exactly this reason:
-   a solid amber button on a full-strength amber bar measures 1.00:1 and disappears.
+   The header is navy, so an amber button on it reads at full strength. It is kept as its own
+   `header` token rather than reusing `brand` so the bar can be retoned without touching every
+   navy surface in the app — but anything sitting **on** the bar must be `cream`, never `brand`.
 3. **Dark text on amber, never white.** White on `#F2A007` is 2.1:1 and fails WCAG.
 4. **Green is success states only. Never a CTA.**
 5. **Sale red is never the brand colour.**
