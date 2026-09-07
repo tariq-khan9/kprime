@@ -10,12 +10,15 @@ so none of them is discovered by a customer first.
 
 ## 1. Content and identity
 
-- [ ] **BLOCKER — Real WhatsApp number.** `NEXT_PUBLIC_WHATSAPP_NUMBER` is still
-      the placeholder `923000000000`. It appears on the float button, the
-      confirmation receipt, the contact page, the returns page and every "message
-      us" link. The `Organization` structured data deliberately omits the contact
-      point while it is a placeholder, so setting the real number also switches
-      that on.
+- [x] **Real WhatsApp number set** — `NEXT_PUBLIC_WHATSAPP_NUMBER=923149698996`.
+      Verified across all twelve touchpoints (float button, footer, contact,
+      order confirmation, track, returns, privacy, both error boundaries,
+      checkout, and the `Organization` structured data); the placeholder appears
+      on no page. The suppressed `contactPoint` is now emitted as
+      `+923149698996`.
+      **Still to do by hand:** tap the button on a real phone and confirm the
+      chat opens — the href is proven correct, but only a device proves WhatsApp
+      actually opens it.
 - [ ] **BLOCKER — `NEXT_PUBLIC_BASE_URL`** is `http://localhost:8000`. Canonical
       URLs, the sitemap, and every Open Graph image point at localhost, so a link
       shared on WhatsApp previews as broken.

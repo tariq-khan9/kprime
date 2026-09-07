@@ -49,7 +49,7 @@ export function PriceDisplay({
           are the same height. Without this a grid of mixed products renders
           ragged rows and the cards below them never line up. */}
       <span
-        className={cn(styles.compare, "flex gap-2")}
+        className={cn(styles.compare, "flex gap-1.5")}
         aria-hidden={!discounted}
       >
         {discounted ? (

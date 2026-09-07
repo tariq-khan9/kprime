@@ -47,7 +47,7 @@ export function ProductCard({
     <Link
       href={`/products/${product.handle}`}
       className={cn(
-        "group flex flex-col gap-2 rounded-md",
+        "group flex flex-col gap-1.5 rounded-md",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
         "focus-visible:ring-offset-2 focus-visible:ring-offset-cream",
         className
@@ -94,8 +94,14 @@ export function ProductCard({
 
       {/* Exactly two lines, always. min-h holds the second line open so a
           one-line title and a two-line title produce equal-height cards and
-          the prices below them stay aligned across a row. */}
-      <h3 className="line-clamp-2 min-h-[2.5rem] text-sm leading-tight text-brand">
+          the prices below them stay aligned across a row.
+
+          36px, not 40px: `text-sm leading-tight` measures 17.5px a line, so two
+          lines need 35px and the old value reserved 5px of dead space under
+          every title — visible as a gap before the stars, worst on a one-line
+          title. Do not go below 36px; at 35px a sub-pixel rounding difference
+          would clip the descenders on the second line. */}
+      <h3 className="line-clamp-2 min-h-9 text-sm leading-tight text-brand">
         {product.title}
       </h3>
 
@@ -124,10 +130,10 @@ export function ProductCard({
  */
 export function ProductCardSkeleton() {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <Skeleton className="aspect-[3/4] w-full" />
       {/* Matches the title's two reserved lines. */}
-      <div className="flex min-h-[2.5rem] flex-col gap-1">
+      <div className="flex min-h-9 flex-col gap-1">
         <Skeleton className="h-3.5 w-full" />
         <Skeleton className="h-3.5 w-2/3" />
       </div>

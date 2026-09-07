@@ -1,5 +1,4 @@
 import { Container } from "@/components/layout/Container"
-import { BrandStrip } from "@/components/page/home/BrandStrip"
 import { CategoryRail } from "@/components/page/home/CategoryRail"
 import { HeroCarousel } from "@/components/page/home/HeroCarousel"
 import { NewsletterSignup } from "@/components/page/home/NewsletterSignup"
@@ -143,9 +142,14 @@ export default async function HomePage() {
         <PromoBannerPair />
       </Container>
 
-      <Container>
+      {/* Brand strip hidden for now — the logos in `static/brands.ts` are
+          placeholders, and showing brands the shop does not actually stock
+          reads as a claim rather than decoration. The component and its data
+          are untouched; delete these two comment lines and restore the
+          <Container> below to bring it back. */}
+      {/* <Container>
         <BrandStrip />
-      </Container>
+      </Container> */}
 
       <Container>
         <NewsletterSignup />
