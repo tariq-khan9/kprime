@@ -6,6 +6,7 @@ import { NewsletterSignup } from "@/components/page/home/NewsletterSignup"
 import { PromoBannerPair } from "@/components/page/home/PromoBannerPair"
 import { JsonLd } from "@/components/shared/JsonLd"
 import { ProductRail } from "@/components/shared/ProductRail"
+import { SITE } from "@/config/site"
 import { organization } from "@/lib/seo/structured-data"
 import { getCollectionByHandle } from "@/lib/data/collections"
 import { getTagIdsByValue, searchProducts } from "@/lib/data/products"
@@ -21,6 +22,15 @@ import { getTagIdsByValue, searchProducts } from "@/lib/data/products"
  * Adding it again would show it twice.
  */
 export const revalidate = 3600
+
+/**
+ * Home is the one page where a canonical of "/" is correct. It used to inherit
+ * that from the root layout, which meant every other page inherited it too —
+ * see the note in `app/layout.tsx`.
+ */
+export const metadata = {
+  alternates: { canonical: "/" },
+}
 
 /**
  * The three rails task 56 names.
@@ -78,6 +88,25 @@ export default async function HomePage() {
       {/* Organization, with the WhatsApp contact point — the number people
           actually reach us on (task 149). */}
       <JsonLd data={organization()} />
+
+      {/*
+        The page's only <h1>, and deliberately not a visible one.
+
+        The home page had none at all. The obvious fix — promoting the hero's
+        heading — does not work here: HeroCarousel renders every slide TWICE,
+        because the duplicate set is what makes the loop seamless, so that would
+        emit ten <h1>s with five of them inside aria-hidden clones. A rotating
+        carousel has no one heading that can honestly serve as the page title
+        anyway.
+
+        `sr-only` keeps it out of the visual design while leaving it in the
+        document for crawlers and screen readers, which is exactly who it is
+        for.
+      */}
+      <h1 className="sr-only">
+        {SITE.name} — electronics, cosmetics, kitchenware and bedding, cash on
+        delivery across Pakistan
+      </h1>
 
       {/* Full-bleed: outside Container on purpose. */}
       <HeroCarousel />

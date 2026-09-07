@@ -9,6 +9,7 @@ export const metadata = {
   title: "Returns and refunds",
   description:
     "What we replace, how long you have, and how to tell us something is wrong.",
+  alternates: { canonical: "/returns-and-refunds" },
 }
 
 /**

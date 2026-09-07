@@ -13,6 +13,7 @@ export const metadata = {
   title: "Shipping and delivery",
   description:
     "Delivery windows and charges for every part of Pakistan, and how cash on delivery works.",
+  alternates: { canonical: "/shipping-and-delivery" },
 }
 
 /**

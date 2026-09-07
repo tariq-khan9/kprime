@@ -9,6 +9,7 @@ export const metadata = {
   title: "Contact us",
   description:
     "Message us on WhatsApp, call, or send a note. A person answers.",
+  alternates: { canonical: "/contact" },
 }
 
 /**

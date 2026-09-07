@@ -78,9 +78,12 @@ export async function generateMetadata({
 
   const title = brand ? `${brand} ${product.title}` : product.title
 
+  // `||` rather than `??` throughout: Medusa returns "" for unwritten copy, and
+  // `??` would keep the empty string and drop the meta tag. See the note on the
+  // category page.
   const description =
-    product.description?.slice(0, 155) ??
-    product.subtitle ??
+    product.description?.trim().slice(0, 155) ||
+    product.subtitle?.trim() ||
     `${product.title}. Cash on delivery across Pakistan.`
 
   const image = product.images[0]?.url ?? product.thumbnail

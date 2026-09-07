@@ -7,6 +7,7 @@ import { SITE } from "@/config/site"
 export const metadata = {
   title: "Terms",
   description: "The terms you agree to when you order from us.",
+  alternates: { canonical: "/terms" },
 }
 
 export default function TermsPage() {

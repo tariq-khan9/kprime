@@ -57,8 +57,17 @@ export async function generateMetadata({
     return { title: "Category not found" }
   }
 
+  /**
+   * `||`, NOT `??`.
+   *
+   * Medusa returns `description: ""` for a category nobody has written copy
+   * for — an empty string, not null — so `??` kept it and Next then omitted the
+   * meta tag entirely. Every category page shipped with no description at all
+   * while this code looked like it set one. `||` falls back on the empty string
+   * too, which is the only behaviour that is ever wanted here.
+   */
   const description =
-    category.description ??
+    category.description?.trim() ||
     `${category.name} delivered across Pakistan, cash on delivery.`
 
   return {

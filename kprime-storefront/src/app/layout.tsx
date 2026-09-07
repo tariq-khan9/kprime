@@ -35,9 +35,19 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   applicationName: SITE.name,
-  // The canonical for every page defaults to its own path; pages that need a
-  // different one override it.
-  alternates: { canonical: "/" },
+  /**
+   * **No `alternates` here on purpose.**
+   *
+   * This used to be `alternates: { canonical: "/" }` with a comment claiming
+   * each page defaulted to its own path. Next does not work that way — it takes
+   * the value literally, so every page that did not override it (about, faq,
+   * contact, privacy, terms, shipping, returns, cart, track) told Google it WAS
+   * the homepage. That is an instruction to drop those pages from the index.
+   *
+   * Each page now declares its own canonical. A page that forgets emits none,
+   * and Google falls back to the request URL — wrong-and-confident is far worse
+   * than absent.
+   */
   openGraph: {
     type: "website",
     siteName: SITE.name,
