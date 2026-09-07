@@ -242,15 +242,18 @@ const getRegionId = unstable_cache(
   { tags: ["regions"] }
 )
 
-function toSummary(product: Record<string, any>): ProductSummary {
-  const variants: any[] = product.variants ?? []
+function toSummary(product: RawProduct): ProductSummary {
+  const variants: RawVariant[] = product.variants ?? []
 
   const priced = variants
     .map((variant) => variant.calculated_price)
-    .filter((price) => price && typeof price.calculated_amount === "number")
+    .filter(
+      (price): price is PricedAmount =>
+        Boolean(price) && typeof price?.calculated_amount === "number"
+    )
 
   // "From" pricing: the cheapest variant is what the card shows.
-  const cheapest = priced.reduce<any>(
+  const cheapest = priced.reduce<PricedAmount | null>(
     (low, price) =>
       low === null || price.calculated_amount < low.calculated_amount
         ? price
@@ -280,11 +283,13 @@ function toSummary(product: Record<string, any>): ProductSummary {
         ? original
         : null,
     currencyCode: cheapest?.currency_code ?? "pkr",
-    createdAt: product.created_at,
-    tags: (product.tags ?? []).map((tag: any) => tag.value).filter(Boolean),
-    options: (product.options ?? []).map((option: any) => ({
+    createdAt: product.created_at ?? "",
+    tags: (product.tags ?? [])
+      .map((tag) => tag.value)
+      .filter((value): value is string => Boolean(value)),
+    options: (product.options ?? []).map((option) => ({
       title: option.title,
-      values: (option.values ?? []).map((value: any) => ({
+      values: (option.values ?? []).map((value) => ({
         id: value.id,
         value: value.value,
       })),
@@ -379,7 +384,11 @@ async function fetchNativeSet(query: NativeQuery): Promise<ProductSummary[]> {
       offset,
     })
 
-    summaries.push(...products.map(toSummary))
+    // The SDK types `variants.calculated_price` far more loosely than what the
+    // `fields` string above actually asks for, so its StoreProduct does not
+    // structurally satisfy RawProduct. Casting once at this boundary keeps the
+    // projection itself fully typed, rather than spreading `any` through it.
+    summaries.push(...(products as unknown as RawProduct[]).map(toSummary))
     offset += products.length
 
     if (products.length === 0 || summaries.length >= count) {
@@ -625,7 +634,16 @@ type RawProduct = {
   type?: { value?: string } | null
   categories?: { id: string; name: string; handle: string }[] | null
   metadata?: Record<string, unknown> | null
+  /** Only the card projection reads this — it is what "newest" sorts on. */
+  created_at?: string
 }
+
+/**
+ * A price that has survived the `typeof calculated_amount === "number"` filter.
+ * Narrowing the property is what lets the reduce below compare amounts without
+ * a non-null assertion on every access.
+ */
+type PricedAmount = RawPrice & { calculated_amount: number }
 
 function toVariantDetail(variant: RawVariant): ProductVariantDetail {
   const price = variant.calculated_price ?? null
