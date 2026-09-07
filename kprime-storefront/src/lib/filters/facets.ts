@@ -16,16 +16,25 @@ import type { ProductSummary } from "@/lib/data/products"
  */
 
 /**
- * A group must cover at least this share of the result set to be shown.
+ * A filter group renders only if it applies to at least this share of the
+ * listing. **0.6, and it is load-bearing against the three-level category tree.**
  *
- * §2.1.2. Without it a leaf-specific spec — Wattage on one charger — appears as
- * a filter on a category of 200 unrelated products, where it narrows to one
- * item and is noise for everything else. Measured against the current
- * catalogue: Colour covers 60% and survives; Size 20%, Wattage and Bed Size
- * 6.7%, all correctly dropped at the top level while still appearing inside
- * their own leaf categories where coverage is 100%.
+ * At 0.25, `/categories/mobile-accessories` offered Wattage, Length and Capacity
+ * beside Colour — each applying to about a quarter of the shelf, because each
+ * belongs to one leaf (chargers, cables, power banks). Ticking `Wattage 45W`
+ * took 45 products down to one. The sidebar looked like it described the
+ * category when it actually described three unrelated groups of things.
+ *
+ * Leaves are option-uniform by construction (see `data/catalogue.ts`), so every
+ * option inside a leaf sits at 100% and always renders. Anything that applies to
+ * only part of a wider listing now drops out: specific filters appear exactly
+ * where the specific items are, and never above them.
+ *
+ * Raising this hides filters on any listing whose products are NOT
+ * option-uniform, which is the intent — but it means a mixed category shows
+ * fewer filters than it would have. Check `/dev/facets` after any import.
  */
-export const COVERAGE_THRESHOLD = 0.25
+export const COVERAGE_THRESHOLD = 0.6
 
 export type FacetValue = {
   /** The value as shown, e.g. "Black". */

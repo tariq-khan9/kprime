@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
 import { Container } from "@/components/layout/Container"
 import { ActiveFilterChips } from "@/components/page/catalog/ActiveFilterChips"
 import { CategoryHeader } from "@/components/page/catalog/CategoryHeader"
+import { CategoryTreeNav } from "@/components/page/catalog/CategoryTreeNav"
 import { EmptyResults } from "@/components/page/catalog/EmptyResults"
 import { FilterDrawer } from "@/components/page/catalog/FilterDrawer"
 import { FilterSidebar } from "@/components/page/catalog/FilterSidebar"
@@ -132,11 +133,29 @@ export default async function CategoryPage({
       <CategoryHeader category={category} count={count} className="mt-4" />
 
       <div className="mt-6 flex gap-8">
-        <FilterSidebar
+        {/* One sticky rail, not two. CategoryTreeNav and FilterSidebar each
+            managing their own `sticky top-20` would both try to pin at the
+            same offset while scrolling — see the note on FilterSidebar's
+            `bare` prop. */}
+        <aside
+          aria-label="Category and filters"
+          className="hidden w-60 shrink-0 flex-col gap-6 lg:flex lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto"
+        >
+          {/* Scoped to the section this page is in, not every category —
+              landing on Electronics shows the Electronics tree, never
+              Cosmetics or Kitchenware beside it. `trail[0]` is a reference
+              into the cached tree, so its `.children` already carries the
+              whole subtree; no separate fetch needed. */}
+          <CategoryTreeNav tree={trail[0] ? [trail[0]] : []} trail={trail} />
+
+          <FilterSidebar
+            bare
             facets={facets}
             priceBounds={priceBounds}
             ratingCounts={ratingCounts}
+            className="border-t border-line pt-6"
           />
+        </aside>
 
         <div className="min-w-0 flex-1">
           {/* The drawer trigger is mobile-only; the chips show at every width,

@@ -27,6 +27,14 @@ import {
   updateStoresStep,
   updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows";
+import {
+  buildCatalogue,
+  CATEGORY_TREE,
+  PRODUCT_TAGS,
+  skuPart,
+  slugify,
+  type ProductBlueprint,
+} from "../data/catalogue";
 
 /**
  * KPrime seeds a single-region Pakistani store: PKR, country PK, Cash on
@@ -80,60 +88,6 @@ const updateStoreCurrencies = createWorkflow(
  */
 
 /** Top-level category -> its children. Parents are seeded first. */
-const CATEGORY_TREE: Record<string, string[]> = {
-  Electronics: ["Mobile Accessories", "Audio", "Computer Accessories"],
-  Cosmetics: ["Skincare", "Makeup", "Fragrances"],
-  Kitchenware: ["Cookware", "Kitchen Appliances", "Storage & Containers"],
-  "Home & Bedding": ["Bedsheets", "Pillows & Blankets"],
-};
-
-/** Cross-category tags — how a shopper filters across unrelated categories. */
-const PRODUCT_TAGS = [
-  "Imported",
-  "Bestseller",
-  "New Arrival",
-  "Warranty Included",
-];
-
-type VariantOption = {
-  /** Option name shown on the product page, e.g. "Capacity" or "Bed Size". */
-  title: string;
-  values: string[];
-};
-
-type ProductBlueprint = {
-  title: string;
-  handle: string;
-  description: string;
-  /** Leaf category name from CATEGORY_TREE. */
-  category: string;
-  /** Coarser grouping than category, used for filtering. */
-  type: string;
-  tags: string[];
-  weight: number;
-  /** Prefix for generated variant SKUs. */
-  skuBase: string;
-  /** Variant price in whole rupees — PKR has no minor unit. */
-  price: number;
-  /** Variant axes. Variants are the cartesian product of these. */
-  options: VariantOption[];
-  /** Category-specific specs, rendered as a table on the product page. */
-  specs: Record<string, string>;
-};
-
-const skuPart = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-/**
- * Explicit category handles. Medusa's auto-slug keeps "&" verbatim, so
- * "Home & Bedding" becomes the handle "home-&-bedding" and lands an ampersand in
- * the URL path. Spell "and" out instead.
- */
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 
 /**
  * Variants are the cartesian product of whatever options the product declares —
@@ -164,314 +118,14 @@ const buildVariants = (product: ProductBlueprint) => {
   });
 };
 
-const productBlueprints: ProductBlueprint[] = [
-  // ---------- Electronics (flagship category) ----------
-  {
-    title: "20000mAh Fast Power Bank",
-    handle: "20000mah-fast-power-bank",
-    description:
-      "Enough charge to take a phone through three full days, or a load-shedding evening with the router still running. Charges two devices at once.",
-    category: "Mobile Accessories",
-    type: "Power & Charging",
-    tags: ["Imported", "Bestseller", "Warranty Included"],
-    weight: 420,
-    skuBase: "PWRBNK",
-    price: 4500,
-    options: [{ title: "Colour", values: ["Black", "White"] }],
-    specs: {
-      Capacity: "20000 mAh",
-      "Max Output": "22.5W",
-      Ports: "2x USB-A, 1x USB-C",
-      Warranty: "6 months",
-    },
-  },
-  {
-    title: "45W USB-C Wall Charger",
-    handle: "45w-usb-c-wall-charger",
-    description:
-      "Compact GaN charger that fills a modern phone to half in about twenty minutes. Fits a standard Pakistani wall socket without an adapter.",
-    category: "Mobile Accessories",
-    type: "Power & Charging",
-    tags: ["Imported", "Warranty Included"],
-    weight: 95,
-    skuBase: "CHRG",
-    price: 2200,
-    options: [
-      { title: "Wattage", values: ["25W", "45W"] },
-      { title: "Colour", values: ["White"] },
-    ],
-    specs: {
-      Input: "100-240V",
-      Technology: "GaN",
-      "Cable Included": "No",
-      Warranty: "12 months",
-    },
-  },
-  {
-    title: "Braided USB-C Cable",
-    handle: "braided-usb-c-cable",
-    description:
-      "Nylon-braided and rated for 10,000 bends, because the cheap ones always fray at the connector first.",
-    category: "Mobile Accessories",
-    type: "Power & Charging",
-    tags: ["Bestseller"],
-    weight: 60,
-    skuBase: "CABLE",
-    price: 800,
-    options: [
-      { title: "Length", values: ["1m", "2m"] },
-      { title: "Colour", values: ["Black", "Grey"] },
-    ],
-    specs: {
-      Connector: "USB-C to USB-C",
-      "Data Rate": "480 Mbps",
-      "Power Rating": "60W",
-    },
-  },
-  {
-    title: "Wireless Noise-Cancelling Earbuds",
-    handle: "wireless-noise-cancelling-earbuds",
-    description:
-      "Active noise cancellation that actually holds up against traffic and a ceiling fan. Case gives roughly four extra charges.",
-    category: "Audio",
-    type: "Audio",
-    tags: ["Imported", "New Arrival", "Warranty Included"],
-    weight: 55,
-    skuBase: "BUDS",
-    price: 6500,
-    options: [{ title: "Colour", values: ["Black", "White"] }],
-    specs: {
-      "Battery Life": "6h (28h with case)",
-      Bluetooth: "5.3",
-      "Driver Size": "11mm",
-      "Water Resistance": "IPX4",
-      Warranty: "12 months",
-    },
-  },
-  {
-    title: "Portable Bluetooth Speaker",
-    handle: "portable-bluetooth-speaker",
-    description:
-      "Loud enough for a rooftop gathering, small enough for a backpack. Survives a splash but not a swim.",
-    category: "Audio",
-    type: "Audio",
-    tags: ["Bestseller"],
-    weight: 640,
-    skuBase: "SPKR",
-    price: 5200,
-    options: [{ title: "Colour", values: ["Black", "Blue"] }],
-    specs: {
-      "Output Power": "20W",
-      "Battery Life": "12 hours",
-      "Water Resistance": "IPX6",
-      Warranty: "6 months",
-    },
-  },
-  {
-    title: "Silent Wireless Mouse",
-    handle: "silent-wireless-mouse",
-    description:
-      "Near-silent switches and a year on one AA battery. The receiver tucks into the base so it does not get lost.",
-    category: "Computer Accessories",
-    type: "Computer Peripherals",
-    tags: ["Imported"],
-    weight: 85,
-    skuBase: "MOUSE",
-    price: 1800,
-    options: [{ title: "Colour", values: ["Black", "Grey"] }],
-    specs: {
-      Connection: "2.4GHz wireless",
-      DPI: "1600",
-      Battery: "1x AA (included)",
-      Warranty: "6 months",
-    },
-  },
-  {
-    title: "Mechanical Keyboard TKL",
-    handle: "mechanical-keyboard-tkl",
-    description:
-      "Tenkeyless layout that frees up desk space for the mouse. Hot-swappable switches, so a change of mind costs nothing.",
-    category: "Computer Accessories",
-    type: "Computer Peripherals",
-    tags: ["Imported", "New Arrival", "Warranty Included"],
-    weight: 780,
-    skuBase: "KBD",
-    price: 8900,
-    options: [
-      { title: "Switch Type", values: ["Blue", "Red", "Brown"] },
-      { title: "Colour", values: ["Black", "White"] },
-    ],
-    specs: {
-      Layout: "87-key TKL",
-      Switches: "Hot-swappable",
-      Backlight: "RGB",
-      Connection: "USB-C detachable",
-      Warranty: "12 months",
-    },
-  },
 
-  // ---------- Cosmetics ----------
-  {
-    title: "Vitamin C Brightening Serum",
-    handle: "vitamin-c-brightening-serum",
-    description:
-      "A 10% vitamin C serum for dullness and uneven tone. Use it at night and follow with sunscreen the next morning.",
-    category: "Skincare",
-    type: "Skincare",
-    tags: ["Imported", "Bestseller"],
-    weight: 120,
-    skuBase: "SERUM",
-    price: 3200,
-    options: [{ title: "Size", values: ["30ml", "50ml"] }],
-    specs: {
-      "Key Ingredient": "10% Vitamin C",
-      "Skin Type": "All, including sensitive",
-      Usage: "Night",
-      "Shelf Life": "12 months after opening",
-    },
-  },
-  {
-    title: "Matte Liquid Lipstick",
-    handle: "matte-liquid-lipstick",
-    description:
-      "Transfer-resistant matte finish that lasts through a meal. Three shades chosen to suit South Asian skin tones.",
-    category: "Makeup",
-    type: "Makeup",
-    tags: ["Bestseller", "New Arrival"],
-    weight: 35,
-    skuBase: "LIP",
-    price: 1500,
-    options: [{ title: "Shade", values: ["Ruby", "Nude", "Plum"] }],
-    specs: {
-      Finish: "Matte",
-      "Net Weight": "5ml",
-      "Wear Time": "8 hours",
-      "Cruelty Free": "Yes",
-    },
-  },
-  {
-    title: "Oud Eau de Parfum",
-    handle: "oud-eau-de-parfum",
-    description:
-      "Warm oud over rose and amber. Heavy enough for winter evenings and weddings, too much for a summer afternoon.",
-    category: "Fragrances",
-    type: "Fragrance",
-    tags: ["Imported"],
-    weight: 320,
-    skuBase: "OUD",
-    price: 7500,
-    options: [{ title: "Size", values: ["50ml", "100ml"] }],
-    specs: {
-      Concentration: "Eau de Parfum",
-      "Top Notes": "Rose, Saffron",
-      "Base Notes": "Oud, Amber, Musk",
-      Longevity: "8-10 hours",
-    },
-  },
-
-  // ---------- Kitchenware ----------
-  {
-    title: "Non-Stick Frying Pan",
-    handle: "non-stick-frying-pan",
-    description:
-      "Heavy forged base that spreads heat evenly instead of scorching one spot. Works on gas and induction.",
-    category: "Cookware",
-    type: "Cookware",
-    tags: ["Bestseller"],
-    weight: 1100,
-    skuBase: "PAN",
-    price: 3800,
-    options: [{ title: "Size", values: ["24cm", "28cm"] }],
-    specs: {
-      Material: "Forged aluminium",
-      Coating: "PFOA-free non-stick",
-      "Induction Safe": "Yes",
-      "Dishwasher Safe": "No — hand wash",
-    },
-  },
-  {
-    title: "1.7L Electric Kettle",
-    handle: "1-7l-electric-kettle",
-    description:
-      "Boils a full jug in about four minutes and shuts itself off. Stainless interior, so no plastic taste.",
-    category: "Kitchen Appliances",
-    type: "Small Appliances",
-    tags: ["Warranty Included"],
-    weight: 950,
-    skuBase: "KETTLE",
-    price: 4200,
-    options: [{ title: "Colour", values: ["Steel", "Black"] }],
-    specs: {
-      Capacity: "1.7 L",
-      Power: "2200W",
-      Interior: "Stainless steel",
-      "Auto Shut-Off": "Yes",
-      Warranty: "12 months",
-    },
-  },
-  {
-    title: "Airtight Storage Container Set",
-    handle: "airtight-storage-container-set",
-    description:
-      "Locking lids that actually keep atta and daal dry through humid months. Stackable, so they fit a shallow shelf.",
-    category: "Storage & Containers",
-    type: "Kitchen Storage",
-    tags: ["New Arrival"],
-    weight: 1400,
-    skuBase: "CNTR",
-    price: 2600,
-    options: [{ title: "Set Size", values: ["3-piece", "5-piece"] }],
-    specs: {
-      Material: "BPA-free plastic",
-      Seal: "Silicone gasket",
-      "Dishwasher Safe": "Yes",
-      Stackable: "Yes",
-    },
-  },
-
-  // ---------- Home & Bedding ----------
-  {
-    title: "Cotton Bedsheet Set",
-    handle: "cotton-bedsheet-set",
-    description:
-      "Pure cotton that gets softer with washing rather than pilling. Comes with two pillowcases; king adds a third.",
-    category: "Bedsheets",
-    type: "Bed Linen",
-    tags: ["Bestseller"],
-    weight: 1600,
-    skuBase: "BEDSHT",
-    price: 5500,
-    options: [
-      { title: "Bed Size", values: ["Single", "Double", "King"] },
-      { title: "Colour", values: ["White", "Grey", "Navy"] },
-    ],
-    specs: {
-      Material: "100% cotton",
-      "Thread Count": "300",
-      Pieces: "Sheet + 2 pillowcases",
-      Care: "Machine wash cold",
-    },
-  },
-  {
-    title: "Microfibre Pillow",
-    handle: "microfibre-pillow",
-    description:
-      "Medium loft that holds its shape instead of flattening after a month. Hypoallergenic fill.",
-    category: "Pillows & Blankets",
-    type: "Bed Linen",
-    tags: ["New Arrival"],
-    weight: 900,
-    skuBase: "PILLOW",
-    price: 1900,
-    options: [{ title: "Pack", values: ["Single", "Pack of 2"] }],
-    specs: {
-      Fill: "Hypoallergenic microfibre",
-      Dimensions: "18 x 28 in",
-      Loft: "Medium",
-      Care: "Spot clean",
-    },
-  },
-];
+/**
+ * The catalogue is composed in `src/data/catalogue.ts` rather than written out
+ * here: 159 products cannot be hand-maintained, and the placeholder image
+ * generator has to read exactly the same definitions or every image in the shop
+ * would describe a product that does not match it.
+ */
+const productBlueprints: ProductBlueprint[] = buildCatalogue();
 
 const DEFAULT_STOCK = 40;
 /**
@@ -479,14 +133,19 @@ const DEFAULT_STOCK = 40;
  * paths are exercised by the seed rather than only in production.
  */
 const STOCK_BY_SKU: Record<string, number> = {
-  "PWRBNK-WHITE": 0,
-  "BEDSHT-KING-NAVY": 0,
-  "BUDS-BLACK": 3,
-  "KBD-BLUE-BLACK": 4,
-  "LIP-RUBY": 6,
-  "KETTLE-STEEL": 7,
-  "PAN-28CM": 9,
-  "CABLE-2M-BLACK": 12,
+  // Out of stock — one variant of a multi-variant product, so the selector has
+  // to disable a single choice rather than the whole product.
+  "MOB001-5000MAH-WHITE": 0,
+  "BED001-KING-BEIGE": 0,
+  // The only variant there is, so the whole product reads unavailable.
+  "AUD001-WIRELESS-INEAR": 0,
+  // Low stock, spread across categories so every listing shows the badge.
+  "CMP001-BLUE-TKL": 3,
+  "MKP001-RUBY-MATTE": 4,
+  "APP001-STEEL-17L": 6,
+  "CKW001-28CM-NONSTICK": 7,
+  "MOB010-2M-BLACK": 9,
+  "BED001-QUEEN-WHITE": 12,
 };
 
 export default async function seedDemoData({ container }: ExecArgs) {
@@ -789,9 +448,12 @@ export default async function seedDemoData({ container }: ExecArgs) {
     container
   ).run({
     input: {
+      // Level 2 only. The leaves are created by seed-catalogue.ts, which owns
+      // the catalogue and is the script that re-runs; creating them here too
+      // would just be a second place to keep the tree in step.
       product_categories: Object.entries(CATEGORY_TREE).flatMap(
-        ([parent, children]) =>
-          children.map((name) => ({
+        ([parent, subs]) =>
+          Object.keys(subs).map((name) => ({
             name,
             handle: slugify(name),
             is_active: true,
@@ -844,7 +506,13 @@ export default async function seedDemoData({ container }: ExecArgs) {
         shipping_profile_id: shippingProfile.id,
         // Per-category specs. Keys differ by category and are rendered as a
         // table on the product page.
-        metadata: blueprint.specs,
+        metadata: {
+          ...blueprint.specs,
+          // Denormalised so the rating filter and the card stars can read one
+          // product row instead of aggregating reviews per listing.
+          average_rating: blueprint.averageRating,
+          review_count: blueprint.reviewCount,
+        },
         options: blueprint.options.map((option) => ({
           title: option.title,
           values: option.values,

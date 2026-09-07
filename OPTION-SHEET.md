@@ -64,107 +64,139 @@ anything under 25% — it would appear the moment more products are added.
 
 ## The allowed options
 
+**Keyed by leaf category — the deepest level, the one that holds products.**
+That is not cosmetic. The storefront renders a filter group only when it covers
+**60%** of a listing, and every product in a leaf carries the same option titles,
+so each option sits at 100% inside its own leaf and always shows. One level up it
+falls to roughly a quarter and disappears. `Wattage` is a charger fact, not a
+mobile-accessory fact, and this table is where that is decided.
+
+**Giving a leaf's product a different option set breaks it.** The group drops
+below 60% and the leaf starts hiding its own filters. `buildCatalogue()` throws
+on this rather than letting it ship.
+
 ### Universal
 
 | Title | Allowed values | Notes |
 |---|---|---|
 | `Colour` | `Black`, `White`, `Grey`, `Navy`, `Blue`, `Red`, `Green`, `Beige`, `Brown`, `Gold`, `Silver`, `Steel`, `Transparent` | Never `Color`. `Steel` is a finish, allowed only where it is genuinely the product's own finish, e.g. a kettle. |
 
-### Electronics — Mobile Accessories
+### Electronics › Mobile Accessories
 
-| Title | Allowed values |
+| Leaf | Options |
 |---|---|
-| `Colour` | from the universal list |
-| `Wattage` | `18W`, `20W`, `25W`, `30W`, `45W`, `65W`, `100W` |
-| `Length` | `0.5m`, `1m`, `1.5m`, `2m`, `3m` |
-| `Capacity` | `5000mAh`, `10000mAh`, `20000mAh`, `30000mAh` |
-| `Connector` | `USB-C`, `Lightning`, `Micro-USB`, `USB-A` |
+| `Chargers` | `Wattage` (`18W`, `20W`, `25W`, `30W`, `45W`, `65W`, `100W`) + `Colour` |
+| `Cables` | `Length` (`0.5m`, `1m`, `1.5m`, `2m`, `3m`) + `Colour` |
+| `Power Banks` | `Capacity` (`5000mAh`, `10000mAh`, `20000mAh`, `30000mAh`) + `Colour` |
+| `Mounts & Wireless` | `Colour` + `Connection` (`Wired`, `Wireless`) |
 
-### Electronics — Computer Accessories
+> `Colour` is on **all four** on purpose. It is the only option that survives to
+> `/categories/mobile-accessories`, and without it that page would have an empty
+> sidebar rather than a useful one.
 
-| Title | Allowed values |
+### Electronics › Audio
+
+| Leaf | Options |
 |---|---|
-| `Colour` | from the universal list |
-| `Switch Type` | `Blue`, `Brown`, `Red`, `Silent Red` |
-| `Layout` | `Full Size`, `TKL`, `60%`, `75%` |
-| `Connection` | `Wired`, `Wireless`, `Bluetooth` |
+| `Headphones & Earphones` | `Connection` (`Wired`, `Wireless`, `Bluetooth`) + `Fit` (`In-Ear`, `On-Ear`, `Over-Ear`) |
+| `Speakers & Microphones` | `Connection` + `Colour` |
+
+### Electronics › Computer Accessories
+
+| Leaf | Options |
+|---|---|
+| `Keyboards` | `Switch Type` (`Blue`, `Brown`, `Red`, `Silent Red`) + `Layout` (`Full Size`, `TKL`, `60%`, `75%`) |
+| `Mice` | `Connection` + `Colour` |
+| `Laptop Accessories` | `Colour` + `Material` (`Aluminium`, `Fabric`, `Leather`, `Plastic`) |
 
 > `Switch Type` values collide with `Colour` values by design — mechanical
-> switches are named by colour and buyers search for them that way. They are a
-> different option title, so they form a different filter group. Leave it.
+> switches are named by colour and buyers search for them that way. Different
+> title, different filter group. Leave it.
 
-### Electronics — Audio
+### Cosmetics › Skincare
 
-| Title | Allowed values |
+| Leaf | Options |
 |---|---|
-| `Colour` | from the universal list |
-| `Connection` | `Wired`, `Wireless`, `Bluetooth` |
-| `Fit` | `In-Ear`, `On-Ear`, `Over-Ear` |
+| `Serums`, `Cleansers`, `Moisturisers`, `Sunscreens & Masks` | `Volume` (`30ml`, `50ml`, `75ml`, `100ml`, `200ml`) + `Skin Type` (`All Skin Types`, `Dry`, `Oily`, `Combination`, `Sensitive`) |
 
-### Kitchen — Cookware
+### Cosmetics › Makeup
 
-| Title | Allowed values |
+| Leaf | Options |
 |---|---|
-| `Diameter` | `20cm`, `24cm`, `26cm`, `28cm`, `30cm` |
-| `Material` | `Non-Stick`, `Stainless Steel`, `Cast Iron`, `Granite` |
-
-> **`Diameter`, not `Size`.** This is the collision described above.
-
-### Kitchen — Appliances
-
-| Title | Allowed values |
-|---|---|
-| `Colour` | from the universal list |
-| `Capacity` | `1L`, `1.5L`, `1.7L`, `2L` |
-
-### Kitchen — Storage & Containers
-
-| Title | Allowed values |
-|---|---|
-| `Pack Size` | `Single`, `Pack of 2`, `Pack of 3`, `Pack of 5`, `Pack of 7` |
-| `Material` | `Plastic`, `Glass`, `Stainless Steel` |
-
-> **`Pack Size`, not `Set Size`.** The seed data uses `Set Size` with values
-> `3-piece` / `5-piece`, while Pillows uses `Pack` with `Single` / `Pack of 2`.
-> Two titles and two value formats for one concept. Unified here.
-
-### Home — Bedsheets
-
-| Title | Allowed values |
-|---|---|
-| `Bed Size` | `Single`, `Double`, `Queen`, `King` |
-| `Colour` | from the universal list |
-| `Material` | `Cotton`, `Cotton Blend`, `Satin`, `Microfibre` |
-
-> `Single` appears in both `Bed Size` and `Pack Size`. Acceptable: they are
-> separate titles, so separate filter groups, and in each the word is the
-> ordinary term a buyer would use.
-
-### Home — Pillows & Blankets
-
-| Title | Allowed values |
-|---|---|
-| `Pack Size` | as above |
-| `Filling` | `Microfibre`, `Memory Foam`, `Cotton` |
-
-### Cosmetics — Makeup
-
-| Title | Allowed values |
-|---|---|
-| `Shade` | `Nude`, `Plum`, `Ruby`, `Coral`, `Berry`, `Mauve` |
-| `Finish` | `Matte`, `Glossy`, `Satin` |
+| `Lip Makeup`, `Face Makeup`, `Eye Makeup` | `Shade` (`Nude`, `Plum`, `Ruby`, `Coral`, `Berry`, `Mauve`, `Beige`, `Gold`, `Brown`, `Black`) + `Finish` (`Matte`, `Glossy`, `Satin`) |
 
 > `Shade`, never `Colour`, for anything applied to the body. A lipstick's shade
 > and a cable's colour are not the same kind of fact and must not share a filter.
+> `Beige`, `Gold`, `Brown` and `Black` are here for foundation, highlighter and
+> mascara, where the sheet's original six make no sense.
 
-### Cosmetics — Skincare · Fragrances
+### Cosmetics › Fragrances
 
-| Title | Allowed values |
+| Leaf | Options |
 |---|---|
-| `Volume` | `30ml`, `50ml`, `75ml`, `100ml`, `200ml` |
-| `Skin Type` | `All Skin Types`, `Dry`, `Oily`, `Combination`, `Sensitive` |
+| `Perfumes`, `Attars & Body Mists` | `Volume` |
 
-> **`Volume`, not `Size`.**
+### Kitchenware › Cookware
+
+| Leaf | Options |
+|---|---|
+| `Frying Pans`, `Pots & Karahi`, `Tawa & Griddles` | `Diameter` (`20cm`, `24cm`, `26cm`, `28cm`, `30cm`) + `Material` (`Non-Stick`, `Stainless Steel`, `Cast Iron`, `Granite`) |
+
+> **`Diameter`, not `Size`.** This is the collision described above.
+
+### Kitchenware › Kitchen Appliances
+
+| Leaf | Options |
+|---|---|
+| `Kettles`, `Blenders & Juicers`, `Cookers & Fryers` | `Capacity` (`1L`, `1.5L`, `1.7L`, `2L`) + `Colour` |
+
+### Kitchenware › Storage & Containers
+
+| Leaf | Options |
+|---|---|
+| `Food Containers`, `Jars & Canisters`, `Lunch Boxes` | `Pack Size` (`Single`, `Pack of 2`, `Pack of 3`, `Pack of 5`, `Pack of 7`) + `Material` (`Plastic`, `Glass`, `Stainless Steel`) |
+
+### Home & Bedding › Bedsheets
+
+| Leaf | Options |
+|---|---|
+| `Bed Sheet Sets`, `Duvets & Covers`, `Mattress Protectors` | `Bed Size` (`Single`, `Double`, `Queen`, `King`) + `Colour` |
+
+### Home & Bedding › Pillows & Blankets
+
+| Leaf | Options |
+|---|---|
+| `Pillows` | `Pack Size` + `Filling` (`Microfibre`, `Memory Foam`, `Cotton`) |
+| `Blankets` | `Colour` + `Filling` |
+| `Cushions & Inserts` | `Pack Size` + `Filling` |
+
+> `Blankets` takes `Colour` rather than `Pack Size` so that `Colour` clears 60%
+> across Home & Bedding as a whole. Without it that top-level page has no filter
+> that applies to everything on it, and shows none at all.
+
+> `Single` appears in both `Bed Size` and `Pack Size`. Acceptable: separate
+> titles, separate groups, and in each the word is the ordinary term a buyer
+> would use.
+
+### The small categories
+
+These four hold products directly and have no leaves.
+
+| Category | Options |
+|---|---|
+| `Sports & Outdoors` | `Colour` + `Material` |
+| `Toys & Games` | `Age Range` (`3+`, `6+`, `8+`, `12+`) + `Colour` |
+| `Stationery` | `Colour` + `Pack Size` |
+| `Health & Wellness` | `Volume` |
+
+> `Age Range` is the one title that exists nowhere else. A gift for a
+> four-year-old and one for a twelve-year-old are different purchases and no
+> existing title carries that. Values are the plus form (`6+`), never a range
+> (`6-8`), so they sort naturally and never overlap.
+>
+> Stationery (2 products) and Health & Wellness (1) fall below
+> `MIN_PRODUCTS_FOR_FILTERS`, so their options are recorded here but no sidebar
+> renders. That is deliberate — they are the test case for that rule.
 
 ---
 
@@ -176,19 +208,8 @@ anything under 25% — it would appear the moment more products are added.
 | `Set Size` | `Pack Size` | Duplicate concept, different value format |
 | `Pack` | `Pack Size` | Same |
 | `Color` | `Colour` | British spelling throughout |
-
-### Migration for existing seed products
-
-Not urgent — these are demo products that task 10 replaces. If any survive:
-
-- `Non-Stick Frying Pan` — `Size` `24cm`/`28cm` → `Diameter`
-- `Oud Eau de Parfum` — `Size` `50ml`/`100ml` → `Volume`
-- `Vitamin C Brightening Serum` — `Size` `30ml`/`50ml` → `Volume`
-- `Airtight Storage Container Set` — `Set Size` `3-piece`/`5-piece` → `Pack Size`
-  `Pack of 3`/`Pack of 5`
-- `Microfibre Pillow` — `Pack` → `Pack Size`
-
----
+| `Age` | `Age Range` | Ambiguous — the product's age or the child's |
+| `Set Size`, `Pack` | `Pack Size` | Already retired above; listed again because both still read naturally |
 
 ## Adding something new
 

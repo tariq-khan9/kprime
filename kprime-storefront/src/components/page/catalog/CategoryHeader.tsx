@@ -28,6 +28,11 @@ export type CategoryHeaderProps = {
  *
  * Chips only render when the category has children, so a leaf shows no empty
  * gap — the whole block collapses rather than leaving a hole above the grid.
+ *
+ * **Mobile only.** At lg width the category page puts a full three-level tree
+ * in the left rail (`CategoryTreeNav`) — showing this row there too would say
+ * the same subcategory names twice on the same screen. Below lg there is no
+ * sidebar, so this chip row is the only way to move between categories.
  */
 export function CategoryHeader({
   category,
@@ -43,7 +48,7 @@ export function CategoryHeader({
       )}
 
       {(category.children?.length ?? 0) > 0 && (
-        <nav aria-label="Subcategories" className="mt-1">
+        <nav aria-label="Subcategories" className="mt-1 lg:hidden">
           {/* Scrolls rather than wraps on a phone: four chips wrapping to three
               rows pushes the grid below the fold. */}
           <ul

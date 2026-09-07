@@ -82,24 +82,39 @@ describe("deriveFacets — coverage threshold", () => {
     ...Array.from({ length: total - covered }, (_, i) => bare(`b${i}`)),
   ]
 
-  it("drops a group at 24%", () => {
-    // 24 of 100 — just under. This is the case §2.1.2 exists to kill.
-    expect(deriveFacets(set(100, 24)).map((f) => f.title)).toEqual([])
+  it("drops a group at 59%", () => {
+    // Just under. This is the case the threshold exists to kill: an option that
+    // belongs to one leaf must not surface on the category above it.
+    expect(deriveFacets(set(100, 59)).map((f) => f.title)).toEqual([])
   })
 
-  it("keeps a group at 26%", () => {
-    expect(deriveFacets(set(100, 26)).map((f) => f.title)).toEqual(["Fabric"])
+  it("drops a group at 27%, the mobile-accessories case", () => {
+    // Four option-uniform leaves under one subcategory put each leaf's own
+    // option at about a quarter. At 0.25 all four rendered together and ticking
+    // one collapsed the listing to a handful.
+    expect(deriveFacets(set(45, 12)).map((f) => f.title)).toEqual([])
+  })
+
+  it("keeps a group at 61%", () => {
+    expect(deriveFacets(set(100, 61)).map((f) => f.title)).toEqual(["Fabric"])
   })
 
   it("keeps a group sitting exactly on the threshold", () => {
-    // The rule is "≥25%", so 25 of 100 stays.
-    expect(deriveFacets(set(100, 25)).map((f) => f.title)).toEqual(["Fabric"])
-    expect(COVERAGE_THRESHOLD).toBe(0.25)
+    // The rule is "≥60%", so 60 of 100 stays.
+    expect(deriveFacets(set(100, 60)).map((f) => f.title)).toEqual(["Fabric"])
+    expect(COVERAGE_THRESHOLD).toBe(0.6)
+  })
+
+  it("keeps an option-uniform leaf, which always sits at 100%", () => {
+    expect(deriveFacets(set(12, 12)).map((f) => f.title)).toEqual(["Fabric"])
   })
 
   it("reports coverage as a fraction", () => {
-    expect(deriveFacets(set(100, 40))[0].coverage).toBeCloseTo(0.4)
-    expect(deriveFacets(set(100, 40))[0].count).toBe(40)
+    // threshold 0, because 40% no longer clears the bar — the arithmetic is
+    // what is under test here, not the cutoff.
+    const [facet] = deriveFacets(set(100, 40), { threshold: 0 })
+    expect(facet.coverage).toBeCloseTo(0.4)
+    expect(facet.count).toBe(40)
   })
 
   it("threshold 0 keeps everything — how task 62 audits the catalogue", () => {
@@ -114,7 +129,12 @@ describe("deriveFacets — coverage threshold", () => {
       product("d", { Colour: ["Black"] }),
     ]
 
-    expect(deriveFacets(products).map((f) => f.title)).toEqual(["Colour", "Size"])
+    // threshold 0: Size covers one product in four and would be dropped, but
+    // the ordering is what matters here.
+    expect(deriveFacets(products, { threshold: 0 }).map((f) => f.title)).toEqual([
+      "Colour",
+      "Size",
+    ])
   })
 
   it("orders values within a group by count, commonest first", () => {

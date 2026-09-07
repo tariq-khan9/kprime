@@ -120,7 +120,14 @@ test("track finds the order", async ({ page }) => {
   const number = await page
     .locator("button[aria-label^='Order number']")
     .innerText()
-  const orderNumber = number.replace(/\D/g, "")
+
+  // The whole formatted number, e.g. "KP-26-150" — NOT the digits.
+  // Stripping non-digits turns KP-26-150 into "26150", which is a different
+  // order entirely, so the lookup would fail for a reason that has nothing to
+  // do with tracking. This also proves the printed format is one a customer can
+  // type straight back in.
+  const orderNumber = (number.match(/KP-\d{2}-\d+/) ?? [])[0] ?? ""
+  expect(orderNumber).not.toBe("")
 
   await page.goto("/track")
   await page.getByLabel(/order number/i).fill(orderNumber)

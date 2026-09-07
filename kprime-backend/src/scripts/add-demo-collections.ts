@@ -24,11 +24,14 @@ const DEMO_COLLECTIONS = [
     title: "Sale",
     handle: "sale",
     products: [
-      "45w-usb-c-wall-charger",
+      "45w-gan-wall-charger",
       "braided-usb-c-cable",
       "20000mah-fast-power-bank",
       "microfibre-pillow",
       "non-stick-frying-pan",
+      "cotton-bedsheet-set",
+      "portable-bluetooth-speaker",
+      "oud-eau-de-parfum",
     ],
   },
   {

@@ -19,14 +19,27 @@
  * long-tail specs, regardless of which happens to be commonest.
  */
 export const FILTER_ORDER: string[] = [
+  // `Size` is deliberately absent — OPTION-SHEET.md retired it because it meant
+  // millilitres in Cosmetics and centimetres in Cookware at the same time.
+  // Listing it here would rank a group that must never exist again.
   "Brand",
   "Colour",
-  "Size",
+  "Shade",
   "Bed Size",
+  "Pack Size",
+  "Volume",
+  "Diameter",
   "Capacity",
   "Wattage",
   "Switch Type",
-  "Shade",
+  "Connection",
+  "Fit",
+  "Material",
+  "Finish",
+  "Skin Type",
+  "Layout",
+  "Length",
+  "Age Range",
 ]
 
 /**
