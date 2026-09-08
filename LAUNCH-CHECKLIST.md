@@ -79,25 +79,39 @@ so none of them is discovered by a customer first.
 
 ## 5. Technical
 
+**Deployment is documented in `DEPLOYMENT.md`** — Dockerfiles for both apps, an
+extended `docker-compose.yml`, and a step-by-step runbook. Both images have been
+built and run end to end; the ordering in that document is not arbitrary, and
+the storefront genuinely cannot be built before the backend is reachable.
+
+- [x] **Newsletter connected.** `BREVO_API_KEY` (the REST key, `xkeysib-…`, not
+      the SMTP key) and `BREVO_LIST_ID=2` are set; a signup was verified landing
+      in the Brevo list.
 - [ ] `ADMIN_NOTIFICATION_EMAIL` and SMTP set in production. The contact form
       returns an honest "not available, use WhatsApp" if the address is missing.
-- [ ] `BREVO_API_KEY` / `BREVO_LIST_ID` if the newsletter is wanted. Without
-      them the form refuses rather than silently discarding sign-ups.
 - [ ] Rotate `MEDUSA_ADMIN_PASSWORD` out of `kprime-backend/.env`. It is
       gitignored, but a shared test password is still a real password.
 - [ ] Image storage: still local disk. **Medusa bakes absolute URLs into `image`
       rows at upload time**, so moving to S3/R2 after real photos are uploaded
       means re-uploading them. Decide before task 10.
 - [ ] Analytics installed.
-- [ ] Backup and rollback plan for the database.
+- [ ] Backup and rollback plan for the database. `DEPLOYMENT.md` §9 has the
+      `pg_dump` command; the plan for *where* those dumps go is still yours to
+      make.
+- [ ] **Double opt-in for the newsletter.** Anyone can POST any address to
+      `/api/newsletter` today and it lands in the list unverified, with no rate
+      limit on that route. Fine at current traffic; it fills the list with junk
+      once the site is public.
 
 ## 6. Known gaps carried into launch
 
-- **Cache revalidation.** Nothing calls `revalidateReviews()` from the backend,
-  and no webhook revalidates the `products` tag. An approved review or an admin
-  price change is invisible to listings until the hourly revalidation turns over.
-  Repeatedly observed during development: clearing `.next` was the only reliable
-  fix.
+- **Cache revalidation — closed.** The backend now POSTs to the storefront's
+  `/api/revalidate` on product, variant, stock, collection, category and review
+  changes, and on price-list edits (the "Demo sale"). Measured on a production
+  build: a price edit went from invisible to visible in 1.1s, stock in 1.0s, a
+  sale price in 1.0s, an approved review in 3.2s. One condition remains — it
+  needs `REVALIDATE_SECRET` set on both sides, or it silently no-ops and the
+  hourly timer is the only thing left.
 - **`/track` rate limiting is per-process, in memory.** Fine on one instance;
   behind two it must move to Redis, which the project already runs.
 - **Real-device testing (task 152) has not been run.** It needs a physical

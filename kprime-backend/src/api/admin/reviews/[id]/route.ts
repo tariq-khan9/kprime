@@ -3,6 +3,7 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { recomputeProductRating } from "../../../../lib/recompute-product-rating";
 import { REVIEW_MODULE } from "../../../../modules/review";
 import { REVIEW_STATUSES } from "../../../../modules/review/models/review";
+import { revalidateStorefront } from "../../../../lib/revalidate-storefront";
 
 /**
  * Moderate one review.
@@ -35,6 +36,8 @@ export async function POST(
 
     const created = await reviewService.reply(req.params.id, reply.trim());
 
+    revalidateStorefront(["reviews"], req.scope.resolve("logger"));
+
     return res.json({ reply: created });
   }
 
@@ -51,6 +54,11 @@ export async function POST(
   // Approving adds a rating to the average; rejecting removes one. Both have to
   // recompute, or a rejected review keeps counting towards the score.
   const rating = await recomputeProductRating(req.scope, review.product_id);
+
+  // Reviews live in a custom module and emit no Medusa event, so the storefront
+  // is told directly. `products` as well as `reviews`: the average rating is
+  // denormalised onto the product and shown on every card.
+  revalidateStorefront(["reviews", "products"], req.scope.resolve("logger"));
 
   return res.json({ review, product_rating: rating });
 }
@@ -69,6 +77,8 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
   if (review?.product_id) {
     await recomputeProductRating(req.scope, review.product_id);
   }
+
+  revalidateStorefront(["reviews", "products"], req.scope.resolve("logger"));
 
   return res.json({ id: req.params.id, object: "review", deleted: true });
 }

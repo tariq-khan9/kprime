@@ -1,0 +1,35 @@
+# Build-context exclusions for BOTH images.
+#
+# This file must live at the repo root. Both services build with `context: .`,
+# and Docker only reads the .dockerignore at the context root — per-app
+# .dockerignore files are silently ignored in that setup. That mistake copied
+# kprime-backend/node_modules into the backend image (324 MB -> 1.68 GB) and
+# made the storefront build fail outright, because the host's pnpm symlink tree
+# collided with the one installed inside the image.
+
+# Dependency trees — reinstalled inside each image for the right platform.
+**/node_modules
+
+# Build output — regenerated inside the image.
+**/.next
+**/.medusa
+**/dist
+**/out
+
+# 777 generated placeholder PNGs (~19 MB). Regenerated on the server into a
+# mounted volume; demo data never belongs baked into an image.
+kprime-backend/static
+
+# Secrets. Containers get their environment from compose at runtime.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Test artefacts and local noise.
+**/test-results
+**/playwright-report
+**/coverage
+**/*.log
+.git
+.github
+**/.DS_Store

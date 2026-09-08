@@ -94,8 +94,8 @@ async function fetchReviews(
  *
  * Product pages are static with revalidation, but reviews change whenever an
  * admin approves one — so this is cached under a tag rather than left to the
- * hourly timer (§2.4). Approving calls `revalidateReviews()` below, and the
- * page picks it up without a rebuild.
+ * hourly timer (§2.4). Approving in Medusa admin posts to `/api/revalidate`,
+ * which drops this tag, and the page picks it up without a rebuild.
  *
  * Only the first page is cached. Later pages are fetched client-side by "load
  * more", because caching page 4 of a product nobody scrolls that far on is

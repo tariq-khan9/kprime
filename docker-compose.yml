@@ -1,26 +1,142 @@
+# Full stack: database, cache, backend, storefront.
+#
+# Local development — datastores only, unchanged from before:
+#   docker compose up -d          (or `pnpm db:up`)
+#
+# Production — everything, via the "app" profile:
+#   docker compose --profile app up -d --build
+#
+# The app services sit behind a profile so that a bare `up -d` cannot try to
+# build them locally. Note also that every variable below uses a plain default
+# rather than compose's `:?` required syntax: compose interpolates the entire
+# file before it selects services, so one `:?` would make the local-dev command
+# fail too. What is actually required is enforced in DEPLOYMENT.md and by the
+# storefront Dockerfile, which refuses to build without a publishable key.
+
 services:
   kprime-postgres:
     image: postgres:18-alpine
     container_name: kprime-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: medusa
-      POSTGRES_PASSWORD: medusa
-      POSTGRES_DB: kprime
+      POSTGRES_USER: ${POSTGRES_USER:-medusa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medusa}
+      POSTGRES_DB: ${POSTGRES_DB:-kprime}
     ports:
-      - "5432:5432"
+      # Bound to loopback. Publishing "5432:5432" exposes the database on every
+      # interface, which on a public VPS means the open internet — with the dev
+      # password, if nobody changed it.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      # The backend starts before Postgres is ready to accept connections
+      # otherwise, and dies on its first query.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medusa} -d ${POSTGRES_DB:-kprime}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   kprime-redis:
     image: redis:8-alpine
     container_name: kprime-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    # Not started by a bare `docker compose up -d` — that stays the local-dev
+    # command for datastores only. Production uses `--profile app`.
+    profiles: ["app"]
+    build:
+      # Repo root, so .npmrc and pnpm-workspace.yaml are in the context.
+      context: .
+      dockerfile: kprime-backend/Dockerfile
+    container_name: kprime-backend
+    restart: unless-stopped
+    depends_on:
+      kprime-postgres:
+        condition: service_healthy
+      kprime-redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      # Service names, not localhost — inside the network each container is its
+      # own localhost.
+      DATABASE_URL: postgres://${POSTGRES_USER:-medusa}:${POSTGRES_PASSWORD:-medusa}@kprime-postgres:5432/${POSTGRES_DB:-kprime}
+      REDIS_URL: redis://kprime-redis:6379
+      JWT_SECRET: ${JWT_SECRET:-}
+      COOKIE_SECRET: ${COOKIE_SECRET:-}
+      # Bakes into product image URLs at write time. Must already be the public
+      # HTTPS host before add-placeholder-images runs.
+      MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL:-}
+      MEDUSA_ADMIN_URL: ${MEDUSA_BACKEND_URL}
+      STOREFRONT_URL: ${STOREFRONT_URL:-}
+      # Cache revalidation. STOREFRONT_INTERNAL_URL keeps the call inside the
+      # compose network instead of going out to the public host and back in
+      # through nginx, which needs hairpin NAT that not every VPS provides.
+      STOREFRONT_INTERNAL_URL: http://kprime-storefront:8000
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
+      STORE_CORS: ${STORE_CORS:-}
+      ADMIN_CORS: ${ADMIN_CORS:-}
+      AUTH_CORS: ${AUTH_CORS:-}
+      MEDUSA_ADMIN_EMAIL: ${MEDUSA_ADMIN_EMAIL:-}
+      MEDUSA_ADMIN_PASSWORD: ${MEDUSA_ADMIN_PASSWORD:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_REPLY_TO: ${SMTP_REPLY_TO:-}
+      ADMIN_NOTIFICATION_EMAIL: ${ADMIN_NOTIFICATION_EMAIL:-}
+    ports:
+      # nginx on the host terminates TLS and proxies here.
+      - "127.0.0.1:9000:9000"
+    volumes:
+      # Product images. Without this, replacing the container deletes all 777
+      # generated files and every product falls back to a letter tile.
+      - backend_static:/app/static
+
+  storefront:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: kprime-storefront/Dockerfile
+      args:
+        # Baked into the client bundle — a change to any of these needs
+        # `--build` to take effect, not a restart.
+        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL}
+        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_BASE_URL: ${STOREFRONT_URL}
+        NEXT_PUBLIC_WHATSAPP_NUMBER: ${NEXT_PUBLIC_WHATSAPP_NUMBER:-}
+        NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-pk}
+    container_name: kprime-storefront
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      # NOTE: there is no server-only backend URL. lib/sdk.ts reads
+      # NEXT_PUBLIC_MEDUSA_BACKEND_URL for both server and browser calls, so
+      # even server-side fetches leave the box and come back through nginx.
+      # It works, but it is a round trip that container-to-container would not
+      # need — worth revisiting if the backend is ever under load.
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_LIST_ID: ${BREVO_LIST_ID:-}
+      # Read at request time by /api/revalidate, so a change here is a restart,
+      # not a rebuild. Must match the backend value above.
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
+    ports:
+      - "127.0.0.1:8000:8000"
 
 volumes:
   postgres_data:
   redis_data:
+  backend_static:
