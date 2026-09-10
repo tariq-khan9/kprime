@@ -9,7 +9,7 @@ mkdir -p "$BACKUP_DIR"
 
 echo "==> Backing up database"
 docker compose exec -T kprime-postgres \
-  pg_dump -U "${POSTGRES_USER:-medusa}" "${POSTGRES_DB:-kprime}" \
+  pg_dump -U "${POSTGRES_USER:-kprime}" "${POSTGRES_DB:-kprime}" \
   | gzip > "$BACKUP_DIR/kprime-$(date +%F-%H%M%S).sql.gz"
 find "$BACKUP_DIR" -name 'kprime-*.sql.gz' -mtime +7 -delete
 
