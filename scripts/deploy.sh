@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_DIR="/home/tariq/kprime"
-BACKUP_DIR="/home/tariq/backups"
+BACKUP_DIR="$APP_DIR/backups"
 cd "$APP_DIR"
 
 mkdir -p "$BACKUP_DIR"
