@@ -13,6 +13,13 @@ docker compose exec -T kprime-postgres \
   | gzip > "$BACKUP_DIR/kprime-$(date +%F-%H%M%S).sql.gz"
 find "$BACKUP_DIR" -name 'kprime-*.sql.gz' -mtime +7 -delete
 
+LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/kprime-*.sql.gz | head -1)
+if [ "$(stat -c%s "$LATEST_BACKUP")" -lt 10000 ]; then
+  echo "!! Backup is suspiciously small — aborting"
+  exit 1
+fi
+echo "Backup OK: $(du -h "$LATEST_BACKUP" | cut -f1)"
+
 echo "==> Saving rollback images"
 for svc in backend storefront; do
   if docker image inspect "kprime-${svc}:latest" >/dev/null 2>&1; then
