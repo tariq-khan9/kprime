@@ -123,6 +123,13 @@ services:
       - backend
     environment:
       NODE_ENV: production
+      # Also needed at RUNTIME, not just as a build arg above. next.config.ts is
+      # copied into the runtime stage and evaluated by `next start` at boot — it
+      # is not bundled, so it cannot see the value Next inlined into .next at
+      # build time. Without it the `??` fallback in next.config.ts makes
+      # images.remotePatterns localhost-only and every product image 400s with
+      # `"url" parameter is not allowed`, while names and prices still work.
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL}
       # NOTE: there is no server-only backend URL. lib/sdk.ts reads
       # NEXT_PUBLIC_MEDUSA_BACKEND_URL for both server and browser calls, so
       # even server-side fetches leave the box and come back through nginx.
