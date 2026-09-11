@@ -8,10 +8,23 @@ import type { NextConfig } from "next";
  *
  * Derived from the same env var the SDK uses, so dev and production do not
  * drift apart.
+ *
+ * Throws rather than defaulting, exactly as lib/sdk.ts does for this same
+ * variable. This file is not bundled — it is evaluated by `next start` at boot,
+ * so a container missing the variable at runtime used to fall back to localhost
+ * and reject every real image host with `"url" parameter is not allowed`. A
+ * shop with no pictures is worse than a server that refuses to start.
  */
-const backendUrl = new URL(
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? "http://localhost:9000"
-);
+const rawBackendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL;
+
+if (!rawBackendUrl) {
+  throw new Error(
+    "NEXT_PUBLIC_MEDUSA_BACKEND_URL is not set. next/image reads it at runtime " +
+      "to allow the backend image host — without it every product image 400s."
+  );
+}
+
+const backendUrl = new URL(rawBackendUrl);
 
 const nextConfig: NextConfig = {
   /**
