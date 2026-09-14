@@ -9,6 +9,7 @@ import {
   buildHref,
   clearAll,
   clearGroup,
+  hasActiveFilters,
   parseFilters,
   setPrice,
 } from "@/lib/filters/url-state"
@@ -19,6 +20,13 @@ export type EmptyResultsProps = {
    * per active group costs nothing there and would cost a round trip here.
    */
   relaxations: Relaxation[]
+  /**
+   * Shown when nothing is filtered and the set is still empty — an empty
+   * category, or a search with no hits. "Remove a filter" would be advice about
+   * filters that do not exist.
+   */
+  emptyTitle?: string
+  emptyDescription?: string
 }
 
 /**
@@ -28,12 +36,20 @@ export type EmptyResultsProps = {
  * results that returns, is the difference between a shopper leaving and a
  * shopper clicking. Only relaxations that actually yield results are passed in.
  */
-export function EmptyResults({ relaxations }: EmptyResultsProps) {
+export function EmptyResults({
+  relaxations,
+  emptyTitle = "No products here yet",
+  emptyDescription = "New stock is on its way. Check back soon, or browse another category.",
+}: EmptyResultsProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const state = parseFilters(searchParams)
+
+  if (!hasActiveFilters(state)) {
+    return <EmptyState title={emptyTitle} description={emptyDescription} />
+  }
 
   const drop = (group: string) =>
     router.push(

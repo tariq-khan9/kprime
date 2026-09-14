@@ -217,13 +217,17 @@ export function HeroCarousel({ className }: { className?: string }) {
                       one light-toned image and the first thing every visitor
                       sees is unreadable. Image slides only; dimming a gradient
                       would just muddy the copy. */}
-                  {/* 75%, not less. Measured against all five photographs: at
-                      60% the subheading — cream at 80% opacity — bottomed out
-                      at 3.29:1 against the brightest part of the darkest image,
-                      under the 4.5:1 WCAG AA needs for normal text. 75% is the
-                      first level where every slide clears it, worst case
-                      5.05:1. */}
-                  <div aria-hidden className="absolute inset-0 bg-brand/75" />
+                  {/* Phone: an even wash, because the copy spans the full width.
+                      From sm: a fade from the left, dark behind the copy (which
+                      sits in max-w-lg on the left) and nearly clear on the
+                      right, so the photograph reads instead of turning into a
+                      navy-tinted blur. The subheading — cream at 80% — must
+                      clear 4.5:1 against the brightest pixel behind it on every
+                      slide; re-measure when a photograph changes. */}
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 bg-brand/75 sm:bg-transparent sm:bg-gradient-to-r sm:from-brand/90 sm:via-brand/70 sm:to-brand/10"
+                  />
                 </>
               )}
 
@@ -231,7 +235,7 @@ export function HeroCarousel({ className }: { className?: string }) {
                   needing a z-index. */}
               <div className="relative mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
                 <div className="max-w-lg">
-                  <h2 className="text-2xl font-bold text-cream sm:text-3xl lg:text-4xl">
+                  <h2 className="text-2xl font-bold tracking-tight text-cream sm:text-3xl lg:text-4xl">
                     {slide.heading}
                   </h2>
                   <p className="mt-2 text-cream/80 sm:text-lg">

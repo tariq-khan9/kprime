@@ -2,12 +2,16 @@
 
 Images for the "Shop by category" rail on the home page.
 
-## These are PLACEHOLDERS
+## These are TEST PHOTOS — replace before launch
 
-Every file here is a generated stand-in with the word PLACEHOLDER printed on it,
-so nobody mistakes one for finished artwork. Replace each with a real photograph
-of the same name and nothing else needs changing — the tiles in
+`electronics.jpg`, `cosmetics.jpg`, `kitchenware.jpg` and `home-and-bedding.jpg`
+are stock photographs downloaded from Unsplash (images.unsplash.com) for layout
+testing only — not our photography. Replace each with a real photograph of the
+same name and nothing else needs changing — the tiles in
 `src/static/category.ts` already point at these filenames.
+
+`audio.jpg` and `mobile-accessories.jpg` are old generated placeholders for
+categories that no longer exist; nothing references them.
 
 ## What the slot expects
 
