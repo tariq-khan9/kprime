@@ -35,9 +35,9 @@ export type Brand = {
  */
 export const BRANDS: Brand[] = [
   { name: "Samsung", logo: "/brands/samsung.svg", href: "/categories/electronics" },
-  { name: "Lenovo", logo: "/brands/lenovo.svg", href: "/categories/computer-accessories" },
-  { name: "HP", logo: "/brands/hp.svg", href: "/categories/computer-accessories" },
-  { name: "Anker", logo: "/brands/anker.svg", href: "/categories/mobile-accessories" },
+  { name: "Lenovo", logo: "/brands/lenovo.svg", href: "/categories/computers-and-laptops" },
+  { name: "HP", logo: "/brands/hp.svg", href: "/categories/computers-and-laptops" },
+  { name: "Anker", logo: "/brands/anker.svg", href: "/categories/electronics" },
   { name: "Philips", logo: "/brands/philips.svg", href: "/categories/kitchen-appliances" },
-  { name: "Logitech", logo: "/brands/logitech.svg", href: "/categories/computer-accessories" },
+  { name: "Logitech", logo: "/brands/logitech.svg", href: "/categories/computers-and-laptops" },
 ]

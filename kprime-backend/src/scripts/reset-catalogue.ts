@@ -4,22 +4,16 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { REVIEW_MODULE } from "../modules/review";
 
 /**
- * Empties the catalogue so `seed.ts` can run again from clean.
+ * Empties the catalogue — products, categories, tags, types — so
+ * `seed-catalogue.ts` can lay down the category tree from clean.
  *
  * Run with: npx medusa exec ./src/scripts/reset-catalogue.ts
- *
- * `seed.ts` has no delete path — it assumes an empty store — so re-running it
- * over an existing catalogue collides on product handles, which are globally
- * unique. This is the missing half.
  *
  * **Orders are deliberately left alone.** Medusa snapshots line items onto the
  * order at placement, so a past order keeps its titles, quantities and prices
  * even after the product row is gone. Deleting orders to tidy up would throw
  * away the only real checkout history there is, and the display_id counter
  * would carry on regardless.
- *
- * Categories, tags and types are left too: `seed.ts` creates them idempotently
- * by handle and re-linking is cheaper than rebuilding the tree.
  */
 export default async function resetCatalogue({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
@@ -114,5 +108,41 @@ export default async function resetCatalogue({ container }: ExecArgs) {
     );
   }
 
-  logger.info("Catalogue reset. Run seed.ts next.");
+  // ---- categories ----
+  //
+  // Deepest first: a category with children still pointing at it cannot go.
+  let categories = await productModule.listProductCategories(
+    {},
+    { select: ["id", "parent_category_id"] }
+  );
+  const categoryCount = categories.length;
+
+  while (categories.length) {
+    const parents = new Set(categories.map((c) => c.parent_category_id));
+    const leaves = categories.filter((c) => !parents.has(c.id));
+
+    await productModule.deleteProductCategories(leaves.map((c) => c.id));
+
+    const deleted = new Set(leaves.map((c) => c.id));
+    categories = categories.filter((c) => !deleted.has(c.id));
+  }
+
+  logger.info(`Deleted ${categoryCount} categories.`);
+
+  // ---- tags and types ----
+  const tags = await productModule.listProductTags({}, { select: ["id"] });
+
+  if (tags.length) {
+    await productModule.deleteProductTags(tags.map((tag) => tag.id));
+  }
+
+  const types = await productModule.listProductTypes({}, { select: ["id"] });
+
+  if (types.length) {
+    await productModule.deleteProductTypes(types.map((type) => type.id));
+  }
+
+  logger.info(`Deleted ${tags.length} tags and ${types.length} types.`);
+
+  logger.info("Catalogue reset. Run seed-catalogue.ts next.");
 }

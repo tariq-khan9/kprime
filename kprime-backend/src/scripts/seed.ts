@@ -1,9 +1,5 @@
-import { CreateInventoryLevelInput, ExecArgs } from "@medusajs/framework/types";
-import {
-  ContainerRegistrationKeys,
-  Modules,
-  ProductStatus,
-} from "@medusajs/framework/utils";
+import { ExecArgs } from "@medusajs/framework/types";
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import {
   createWorkflow,
   transform,
@@ -11,11 +7,7 @@ import {
 } from "@medusajs/framework/workflows-sdk";
 import {
   createApiKeysWorkflow,
-  createInventoryLevelsWorkflow,
   createProductCategoriesWorkflow,
-  createProductsWorkflow,
-  createProductTagsWorkflow,
-  createProductTypesWorkflow,
   createRegionsWorkflow,
   createSalesChannelsWorkflow,
   createShippingOptionsWorkflow,
@@ -27,14 +19,7 @@ import {
   updateStoresStep,
   updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows";
-import {
-  buildCatalogue,
-  CATEGORY_TREE,
-  PRODUCT_TAGS,
-  skuPart,
-  slugify,
-  type ProductBlueprint,
-} from "../data/catalogue";
+import { CATEGORY_TREE, slugify } from "../data/catalogue";
 
 /**
  * KPrime seeds a single-region Pakistani store: PKR, country PK, Cash on
@@ -73,81 +58,9 @@ const updateStoreCurrencies = createWorkflow(
 );
 
 /**
- * KPrime is a mixed general store: electronics (the flagship), cosmetics,
- * kitchenware and home bedding.
- *
- * Categories carry genuinely different attributes — a charger has wattage and a
- * warranty, a bedsheet has a thread count and a bed size, a lipstick has a shade
- * and nothing else. So variant options and specs are declared per product rather
- * than as one global size x colour matrix.
- *
- * Seeded products deliberately carry NO images. The only public bucket available
- * holds apparel photos, which would be actively misleading on a power bank; the
- * storefront renders a placeholder for image-less products, and real photography
- * is uploaded through the admin.
+ * KPrime is a mixed general store: electronics, cosmetics, kitchenware and home
+ * bedding. Only the category tree is seeded — products are added in the admin.
  */
-
-/** Top-level category -> its children. Parents are seeded first. */
-
-/**
- * Variants are the cartesian product of whatever options the product declares —
- * one axis for a lipstick shade, two for a bedsheet's size and colour.
- */
-const buildVariants = (product: ProductBlueprint) => {
-  const combinations = product.options.reduce<Record<string, string>[]>(
-    (acc, option) =>
-      acc.flatMap((combo) =>
-        option.values.map((value) => ({ ...combo, [option.title]: value }))
-      ),
-    [{}]
-  );
-
-  return combinations.map((combo) => {
-    const values = product.options.map((option) => combo[option.title]);
-    return {
-      title: values.join(" / "),
-      sku: [product.skuBase, ...values.map(skuPart)].join("-"),
-      options: combo,
-      prices: [
-        {
-          amount: product.price,
-          currency_code: CURRENCY,
-        },
-      ],
-    };
-  });
-};
-
-
-/**
- * The catalogue is composed in `src/data/catalogue.ts` rather than written out
- * here: 159 products cannot be hand-maintained, and the placeholder image
- * generator has to read exactly the same definitions or every image in the shop
- * would describe a product that does not match it.
- */
-const productBlueprints: ProductBlueprint[] = buildCatalogue();
-
-const DEFAULT_STOCK = 40;
-/**
- * A few deliberate stock states so the storefront's out-of-stock and low-stock
- * paths are exercised by the seed rather than only in production.
- */
-const STOCK_BY_SKU: Record<string, number> = {
-  // Out of stock — one variant of a multi-variant product, so the selector has
-  // to disable a single choice rather than the whole product.
-  "MOB001-5000MAH-WHITE": 0,
-  "BED001-KING-BEIGE": 0,
-  // The only variant there is, so the whole product reads unavailable.
-  "AUD001-WIRELESS-INEAR": 0,
-  // Low stock, spread across categories so every listing shows the badge.
-  "CMP001-BLUE-TKL": 3,
-  "MKP001-RUBY-MATTE": 4,
-  "APP001-STEEL-17L": 6,
-  "CKW001-28CM-NONSTICK": 7,
-  "MOB010-2M-BLACK": 9,
-  "BED001-QUEEN-WHITE": 12,
-};
-
 export default async function seedDemoData({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
   const link = container.resolve(ContainerRegistrationKeys.LINK);
@@ -196,6 +109,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       selector: { id: store.id },
       update: {
+        name: "Karkhano Prime",
         default_sales_channel_id: defaultSalesChannel[0].id,
       },
     },
@@ -448,12 +362,9 @@ export default async function seedDemoData({ container }: ExecArgs) {
     container
   ).run({
     input: {
-      // Level 2 only. The leaves are created by seed-catalogue.ts, which owns
-      // the catalogue and is the script that re-runs; creating them here too
-      // would just be a second place to keep the tree in step.
       product_categories: Object.entries(CATEGORY_TREE).flatMap(
         ([parent, subs]) =>
-          Object.keys(subs).map((name) => ({
+          subs.map((name) => ({
             name,
             handle: slugify(name),
             is_active: true,
@@ -463,93 +374,9 @@ export default async function seedDemoData({ container }: ExecArgs) {
     },
   });
 
-  const categoryIdByName = new Map<string, string>(
-    [...parentCategories, ...childCategories].map((cat) => [cat.name, cat.id])
-  );
-  logger.info(`Finished seeding ${categoryIdByName.size} product categories.`);
-
-  logger.info("Seeding product tags and types...");
-  // Tags and types are separate entities referenced by id, not inline values.
-  const { result: createdTags } = await createProductTagsWorkflow(container).run({
-    input: { product_tags: PRODUCT_TAGS.map((value) => ({ value })) },
-  });
-  const tagIdByValue = new Map(createdTags.map((tag) => [tag.value, tag.id]));
-
-  const { result: createdTypes } = await createProductTypesWorkflow(
-    container
-  ).run({
-    input: {
-      product_types: [
-        ...new Set(productBlueprints.map((blueprint) => blueprint.type)),
-      ].map((value) => ({ value })),
-    },
-  });
-  const typeIdByValue = new Map(
-    createdTypes.map((type) => [type.value, type.id])
-  );
   logger.info(
-    `Finished seeding ${tagIdByValue.size} tags and ${typeIdByValue.size} types.`
+    `Finished seeding ${parentCategories.length + childCategories.length} product categories.`
   );
-
-  logger.info("Seeding product data...");
-  await createProductsWorkflow(container).run({
-    input: {
-      products: productBlueprints.map((blueprint) => ({
-        title: blueprint.title,
-        category_ids: [categoryIdByName.get(blueprint.category)!],
-        type_id: typeIdByValue.get(blueprint.type)!,
-        tag_ids: blueprint.tags.map((tag) => tagIdByValue.get(tag)!),
-        description: blueprint.description,
-        handle: blueprint.handle,
-        weight: blueprint.weight,
-        status: ProductStatus.PUBLISHED,
-        shipping_profile_id: shippingProfile.id,
-        // Per-category specs. Keys differ by category and are rendered as a
-        // table on the product page.
-        metadata: {
-          ...blueprint.specs,
-          // Denormalised so the rating filter and the card stars can read one
-          // product row instead of aggregating reviews per listing.
-          average_rating: blueprint.averageRating,
-          review_count: blueprint.reviewCount,
-        },
-        options: blueprint.options.map((option) => ({
-          title: option.title,
-          values: option.values,
-        })),
-        variants: buildVariants(blueprint),
-        sales_channels: [
-          {
-            id: defaultSalesChannel[0].id,
-          },
-        ],
-      })),
-    },
-  });
-  logger.info(`Finished seeding ${productBlueprints.length} products.`);
-
-  logger.info("Seeding inventory levels.");
-
-  const { data: inventoryItems } = await query.graph({
-    entity: "inventory_item",
-    fields: ["id", "sku"],
-  });
-
-  const inventoryLevels: CreateInventoryLevelInput[] = inventoryItems.map(
-    (inventoryItem) => ({
-      location_id: stockLocation.id,
-      inventory_item_id: inventoryItem.id,
-      stocked_quantity: STOCK_BY_SKU[inventoryItem.sku ?? ""] ?? DEFAULT_STOCK,
-    })
-  );
-
-  await createInventoryLevelsWorkflow(container).run({
-    input: {
-      inventory_levels: inventoryLevels,
-    },
-  });
-
-  logger.info("Finished seeding inventory levels data.");
 
   logger.info(
     `Publishable API key (set NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY to this): ${publishableApiKey.token}`

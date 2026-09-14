@@ -4,7 +4,7 @@
  * **Curated, not derived.** The rail used to render whatever `getCategoryTree`
  * returned, which meant every category the shop had ever created — nineteen of
  * them, including empty demo ones — competed for the most valuable strip on the
- * site. This is a hand-picked six instead: the ones worth sending a first-time
+ * site. This is a hand-picked list instead: the ones worth sending a first-time
  * visitor to.
  *
  * The trade is that adding a category in admin no longer changes this rail. That
@@ -32,16 +32,6 @@ export const CATEGORY_TILES: CategoryTile[] = [
     title: "Electronics",
     image: "/category/electronics.jpg",
     href: "/categories/electronics",
-  },
-  {
-    title: "Mobile Accessories",
-    image: "/category/mobile-accessories.jpg",
-    href: "/categories/mobile-accessories",
-  },
-  {
-    title: "Audio",
-    image: "/category/audio.jpg",
-    href: "/categories/audio",
   },
   {
     title: "Cosmetics",
