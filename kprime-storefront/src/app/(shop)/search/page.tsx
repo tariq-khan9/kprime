@@ -103,7 +103,11 @@ export default async function SearchPage({
           ) : (
             // With relaxations, this offers a way forward. With none — a query
             // that simply matched nothing — it still beats a blank column.
-            <EmptyResults relaxations={relaxations} />
+            <EmptyResults
+              relaxations={relaxations}
+              emptyTitle="No products found"
+              emptyDescription="Try a different word, or browse the categories."
+            />
           )}
         </div>
       </div>

@@ -41,7 +41,7 @@ export function CategoryHeader({
 }: CategoryHeaderProps) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <h1 className="text-2xl font-bold sm:text-3xl">{category.name}</h1>
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{category.name}</h1>
 
       {category.description && (
         <p className="max-w-2xl text-muted">{category.description}</p>

@@ -128,7 +128,7 @@ export function ScrollRail({
     // any single card is hovered.
     <section className={cn("group/rail flex flex-col gap-3", className)}>
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-bold text-brand sm:text-xl">{title}</h2>
+        <h2 className="text-xl font-bold tracking-tight text-brand sm:text-2xl">{title}</h2>
 
         {viewAllHref && (
           <Link href={viewAllHref} className="text-muted underline hover:text-brand">

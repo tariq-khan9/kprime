@@ -56,7 +56,7 @@ Navy brand, amber action, red sale, green success, white page. Every colour has 
 | `action.ink` | `#1A1408` | Text on amber |
 | `sale` | `#C2410C` | Discount badges, savings |
 | `success` | `#15803D` | In stock, order confirmed |
-| `muted` | `#6B7280` | Breadcrumbs, labels, strikethrough prices |
+| `muted` | `#5F6673` | Breadcrumbs, labels, strikethrough prices |
 | `line` | `#E6E2DA` | Borders, dividers |
 
 1. **Navy replaces black for text.** Never `#000`, `#333`, `text-gray-900`.

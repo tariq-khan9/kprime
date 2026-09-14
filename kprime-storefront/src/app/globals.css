@@ -37,7 +37,10 @@
 
   --color-sale: #c2410c;
   --color-success: #15803d;
-  --color-muted: #6b7280;
+  /* #5f6673, not Tailwind's #6b7280: that measured 4.40:1 on cream, under the
+     4.5:1 AA floor for the small secondary text muted is used for. This is
+     5.26:1 on cream and 5.78:1 on paper. */
+  --color-muted: #5f6673;
   --color-line: #e6e2da;
 
   /* 8px base. Overrides v4's 6px --radius-md so `rounded-md` is the default

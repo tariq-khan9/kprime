@@ -1,31 +1,29 @@
 import Image from "next/image"
 import Link from "next/link"
 
-import { ScrollRail } from "@/components/shared/ScrollRail"
 import { CATEGORY_TILES, type CategoryTile } from "@/static/category"
 import { cn } from "@/lib/utils/format"
 
 export type CategoryRailProps = {
-  /** Defaults to the curated six in `src/static/category.ts`. */
+  /** Defaults to the curated list in `src/static/category.ts`. */
   tiles?: CategoryTile[]
   className?: string
 }
 
 /**
- * Scrolling row of category tiles — three visible on desktop, the rest reached
- * by the arrows.
+ * Category tiles — 2×2 on a phone, one row of four from md.
  *
- * A rail rather than a wrapping grid because a grid grows downwards: at ten
- * categories it pushed roughly 785px of navigation above the first product on a
- * phone. A rail is the same height whether there are four tiles or forty.
+ * A grid, not a scrolling rail, because the shop has four top-level categories.
+ * The rail showed three and hid the fourth behind an arrow, so a quarter of the
+ * shop was invisible from the home page. Two rows of 3:2 tiles at 360px is about
+ * 240px, well short of the height that once made a grid push products off the
+ * first screen. If the curated list grows past four, revisit this.
  *
  * Tiles are 3:2 landscape, deliberately the inverse of ProductCard's 3:4
  * portrait, so a category is never mistaken for a product at a glance.
  *
  * **Reads a curated list, not the live tree.** See `src/static/category.ts` for
  * why. The header's mega menu and the footer still render every category.
- *
- * Server component: ScrollRail is the only client code involved.
  */
 export function CategoryRail({
   tiles = CATEGORY_TILES,
@@ -36,22 +34,15 @@ export function CategoryRail({
   }
 
   return (
-    <ScrollRail title="Shop by category" className={className}>
-      {tiles.map((tile) => (
-        <div
-          key={tile.href}
-          className={cn(
-            "shrink-0 snap-start",
-            // Phone ~2.2 tiles, tablet ~3.3 — the partial tile signals there is
-            // more to the right, which is the only affordance touch gets.
-            //
-            // From md: exactly three, filling the row. The calc subtracts the
-            // two 1rem gaps between them, so three tiles span the container
-            // edge to edge and the arrows do the rest.
-            "w-[45%] sm:w-[30%] md:w-[calc((100%-2rem)/3)]"
-          )}
-        >
+    <section className={cn("flex flex-col gap-3", className)}>
+      <h2 className="text-xl font-bold tracking-tight text-brand sm:text-2xl">
+        Shop by category
+      </h2>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        {tiles.map((tile) => (
           <Link
+            key={tile.href}
             href={tile.href}
             className={cn(
               "group block overflow-hidden rounded-md",
@@ -68,23 +59,31 @@ export function CategoryRail({
                 // screen reader should not hear the category name twice.
                 alt=""
                 fill
-                // Two tiles at 360px, three from md.
-                sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 33vw"
+                sizes="(max-width: 768px) 50vw, 25vw"
                 className="object-cover transition-transform duration-200 group-hover:scale-105"
               />
 
-              {/* The title sits on the photograph, so it needs the same scrim
-                  the hero uses — without it legibility depends on whatever
-                  happens to be behind those words. */}
-              <div aria-hidden className="absolute inset-0 bg-brand/50" />
+              {/* A fade under the title rather than a wash over the whole
+                  photo: the words stay legible and the picture still reads.
+                  Held dark through the bottom fifth because a phone tile is
+                  short and the title fills much of its lower half. Measured on
+                  the test photos, against the brightest pixel behind the title:
+                  6.1:1 worst at 390px, 9.0:1 at 1440px — re-measure with real
+                  photographs. `bg-linear-to-t`, not `bg-gradient-to-t`: the
+                  legacy alias silently drops the gradient once a stop position
+                  like `from-20%` is added. */}
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-linear-to-t from-brand/85 from-20% via-brand/40 via-55% to-transparent"
+              />
 
-              <span className="relative p-3 text-base font-bold text-cream sm:text-lg md:p-4 md:text-xl">
+              <span className="relative p-3 text-base font-bold tracking-tight text-cream sm:text-lg md:p-4">
                 {tile.title}
               </span>
             </div>
           </Link>
-        </div>
-      ))}
-    </ScrollRail>
+        ))}
+      </div>
+    </section>
   )
 }

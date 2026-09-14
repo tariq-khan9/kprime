@@ -40,7 +40,9 @@ export function PriceDisplay({
   const saving = discounted ? originalPrice - price : 0
 
   return (
-    <div className={cn("flex flex-col", className)}>
+    // tabular-nums: equal-width digits, so prices stacked in a grid or a cart
+    // line up column by column.
+    <div className={cn("flex flex-col tabular-nums", className)}>
       <span className={cn(styles.current, "text-brand")}>
         {formatPKR(price)}
       </span>
