@@ -1,0 +1,10 @@
+{
+  "login": {
+    "title": "Welcome to Karkhano Prime"
+  },
+  "invite": {
+    "title": "Welcome to Karkhano Prime",
+    "successHint": "Get started with the Karkhano Prime admin right away.",
+    "successAction": "Open Karkhano Prime admin"
+  }
+}

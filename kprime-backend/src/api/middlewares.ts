@@ -104,5 +104,22 @@ export default defineMiddlewares({
       method: "POST",
       middlewares: [rateLimit("review-submit", 10)],
     },
+    // Without these a custom admin route is open to every role. See
+    // src/policies/review.ts.
+    {
+      matcher: "/admin/reviews*",
+      method: "GET",
+      policies: [{ resource: "review", operation: "read" }],
+    },
+    {
+      matcher: "/admin/reviews/:id",
+      method: "POST",
+      policies: [{ resource: "review", operation: "update" }],
+    },
+    {
+      matcher: "/admin/reviews/:id",
+      method: "DELETE",
+      policies: [{ resource: "review", operation: "delete" }],
+    },
   ],
 });

@@ -71,6 +71,12 @@ const requireSecret = (name: "JWT_SECRET" | "COOKIE_SECRET") => {
 };
 
 module.exports = defineConfig({
+  // Role-based access for admin users. With this on, an admin user with no role
+  // is refused on every admin route — give each user a role (see
+  // src/scripts/setup-admin-users.ts) before deploying.
+  featureFlags: {
+    rbac: true,
+  },
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     // Session storage
@@ -168,6 +174,12 @@ module.exports = defineConfig({
     // Product reviews — the one custom domain module; Medusa v2 ships none
     {
       resolve: "./src/modules/review",
+    },
+    // Roles and permissions. Listed explicitly because `defineConfig` decides
+    // whether to load it before `featureFlags` above has been applied, so the
+    // flag alone leaves the module disabled.
+    {
+      resolve: "@medusajs/medusa/rbac",
     },
   ],
 })
