@@ -177,6 +177,11 @@ export type SearchProductsParams = {
   maxPrice?: number
   /** "4 stars and up". Applied in server memory, like price (§2.4). */
   minRating?: number | null
+  /**
+   * Only products with a real discount. Applied in server memory: a discount
+   * comes from a Sale price list, which the store API cannot filter on.
+   */
+  onSale?: boolean
   sort?: ProductSort
   page?: number
   pageSize?: number
@@ -503,7 +508,14 @@ export async function searchProducts(
   // Applied here, before ANYTHING is derived. Filtering after `priceBounds` or
   // `deriveFacets` would offer a slider range and facet values belonging to
   // products that are no longer in the result set.
-  const all = params.q?.trim() ? filterByTitle(fetched, params.q) : fetched
+  const titled = params.q?.trim() ? filterByTitle(fetched, params.q) : fetched
+
+  // Same rule as the title filter: before anything is derived. `originalPrice`
+  // is already null unless the cheapest variant is genuinely discounted, so
+  // this matches exactly the cards that show a strikethrough.
+  const all = params.onSale
+    ? titled.filter((product) => product.originalPrice !== null)
+    : titled
 
   // The scope decides whether filtering is offered at all — see
   // MIN_PRODUCTS_FOR_FILTERS. `all` is pre-filter by construction, so a shopper

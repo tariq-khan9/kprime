@@ -42,13 +42,7 @@ export function Header({ tree }: { tree: CategoryNode[] }) {
           position against this row. */}
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div
-          className={cn(
-            "flex items-center gap-2 transition-[height] duration-200",
-            // Shrinks on scroll at desktop only — 56px on mobile is already
-            // the floor, and animating it there just makes the page jump.
-            "h-14",
-            scrolled ? "lg:h-14" : "lg:h-[72px]"
-          )}
+          className="flex h-14 items-center gap-2"
         >
           {/* -ml-2.5 does for the burger what -mr-2.5 does for the cart:
               aligns the icon with the container edge rather than its hit

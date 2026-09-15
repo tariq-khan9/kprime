@@ -5,8 +5,8 @@ Photographs for the home page carousel.
 ## The five files here are TEST PHOTOS — replace before launch
 
 `delivery.jpg`, `electronics.jpg`, `home.jpg`, `cosmetics.jpg` and
-`kitchen.jpg` are stock photographs downloaded from Unsplash (images.unsplash.com)
-for layout testing only. They are not our photography and do not show our
+`kitchen.jpg` are stock photographs downloaded from Unsplash and Pexels for layout
+testing only. They are not our photography and do not show our
 products. Replace each with a real photograph of the same name and nothing else
 needs changing — the slides in `src/static/hero.ts` already point at these
 filenames. Update the `imageAlt` there to describe the new photo.

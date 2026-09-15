@@ -58,7 +58,7 @@ export function CategoryMegaMenu({ tree, className }: CategoryMegaMenuProps) {
                   "group-focus-within:opacity-100"
                 )}
               >
-                <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-8 py-4">
+                <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-8 py-2.5">
                   {top.children.map((sub, i) => (
                     <span key={sub.id} className="flex items-center gap-x-3">
                       {i > 0 && (

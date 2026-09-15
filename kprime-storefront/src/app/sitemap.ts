@@ -63,8 +63,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
 
-    ...collections.map((collection) => ({
-      url: `${BASE_URL}/collections/${collection.handle}`,
+    // Sale is derived from discounts, not a Medusa collection, so it is never
+    // in `collections`. A real one named `sale` is shadowed by the page anyway.
+    ...[
+      "sale",
+      ...collections
+        .map((collection) => collection.handle)
+        .filter((handle) => handle !== "sale"),
+    ].map((handle) => ({
+      url: `${BASE_URL}/collections/${handle}`,
       lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.7,
