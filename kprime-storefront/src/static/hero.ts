@@ -60,7 +60,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     ctaHref: "/categories/electronics",
     gradient: "from-brand-light to-brand",
     image: "/hero/electronics.jpg",
-    imageAlt: "A smart TV showing its home screen on a wooden shelf",
+    imageAlt: "Blenders, microwaves and coffee machines on display counters in an appliance store",
   },
   {
     heading: "For the home",
@@ -69,7 +69,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     ctaHref: "/categories/home-and-bedding",
     gradient: "from-brand to-action-ink",
     image: "/hero/home.jpg",
-    imageAlt: "A living room with a yellow armchair and a floor lamp",
+    imageAlt: "A bedroom with white bedding, cushions and a green throw against a green patterned wall",
   },
   {
     heading: "Everyday cosmetics",
@@ -78,7 +78,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     ctaHref: "/categories/cosmetics",
     gradient: "from-brand-light to-action-ink",
     image: "/hero/cosmetics.jpg",
-    imageAlt: "Makeup brushes, lipstick and compacts on a peach background",
+    imageAlt: "Unlabelled white skincare products — a tube, a pump bottle and cream jars — beside folded towels",
   },
   {
     heading: "Kitchen essentials",
@@ -87,6 +87,6 @@ export const HERO_SLIDES: HeroSlide[] = [
     ctaHref: "/categories/kitchenware",
     gradient: "from-action-ink to-brand",
     image: "/hero/kitchen.jpg",
-    imageAlt: "Two people cooking together at a kitchen stove",
+    imageAlt: "A bright kitchen counter with a blender, a pink kettle and storage jars",
   },
 ];

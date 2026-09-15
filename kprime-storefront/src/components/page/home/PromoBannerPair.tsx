@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 
 import { PROMO_BANNERS } from "@/static/promo"
@@ -6,9 +7,8 @@ import { cn } from "@/lib/utils/format"
 /**
  * Two merchandising cards.
  *
- * Stacked at 360px, side by side from md. Gradients stand in for artwork that
- * does not exist yet — deliberately not stock photography, so these cannot ship
- * by accident.
+ * Stacked at 360px, side by side from md. A card with an image draws it under a
+ * navy scrim; one without falls back to its gradient.
  */
 export function PromoBannerPair({ className }: { className?: string }) {
   return (
@@ -29,11 +29,31 @@ export function PromoBannerPair({ className }: { className?: string }) {
                 than the other as text wraps. */}
             <div
               className={cn(
-                "flex aspect-[2/1] w-full items-end bg-gradient-to-br p-5 sm:aspect-[5/2]",
+                "relative flex aspect-[2/1] w-full items-end overflow-hidden bg-gradient-to-br p-5 sm:aspect-[5/2]",
                 promo.gradient
               )}
             >
-              <div>
+              {promo.image && (
+                <>
+                  <Image
+                    src={promo.image}
+                    alt={promo.imageAlt ?? ""}
+                    fill
+                    sizes="(min-width: 768px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+
+                  {/* The copy sits bottom-left, so the scrim is darkest there
+                      and thins towards the top, letting the photo read. */}
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 bg-gradient-to-t from-brand/90 via-brand/50 to-brand/10"
+                  />
+                </>
+              )}
+
+              {/* Relative so the copy stacks above the image and scrim. */}
+              <div className="relative">
                 <h3 className="text-lg font-bold text-cream sm:text-xl">
                   {promo.heading}
                 </h3>

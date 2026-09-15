@@ -6,11 +6,6 @@
  * rather than wrap somewhere sensible.
  *
  * `href` must be a real category handle or the banner 404s.
- *
- * Gradients only, no images. These sit directly under the product rails and are
- * the last thing before the brand strip; a pair of full-bleed photographs there
- * competes with the products above them for attention, which is the wrong way
- * round on a shop's home page.
  */
 
 export type PromoBanner = {
@@ -20,8 +15,16 @@ export type PromoBanner = {
   subheading: string
   /** Must be a real category handle. */
   href: string
-  /** Tailwind gradient classes. See the note in `src/static/hero.ts` on colour. */
+  /**
+   * Tailwind gradient classes. See the note in `src/static/hero.ts` on colour.
+   *
+   * Still required with an image: it shows until the photograph paints.
+   */
   gradient: string
+  /** Path under `public/`, e.g. `/promo/kitchen.jpg`. Omit for a gradient. */
+  image?: string
+  /** Describes the photograph. Required whenever `image` is set. */
+  imageAlt?: string
 }
 
 /**
@@ -38,11 +41,15 @@ export const PROMO_BANNERS: [PromoBanner, PromoBanner] = [
     subheading: "Cookware, appliances and storage",
     href: "/categories/kitchenware",
     gradient: "from-sale/80 to-sale",
+    image: "/promo/kitchen.jpg",
+    imageAlt: "Pans of vegetables and soup cooking on a gas stove",
   },
   {
     heading: "Everyday cosmetics",
     subheading: "Skincare, makeup and fragrances",
     href: "/categories/cosmetics",
     gradient: "from-brand-light to-brand",
+    image: "/promo/cosmetics.jpg",
+    imageAlt: "Pink skincare jars, tubes, a lipstick and a serum bottle laid out on a pale pink surface",
   },
 ]

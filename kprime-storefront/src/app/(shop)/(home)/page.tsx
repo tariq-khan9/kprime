@@ -8,7 +8,7 @@ import { ProductRail } from "@/components/shared/ProductRail"
 import { SITE } from "@/config/site"
 import { organization } from "@/lib/seo/structured-data"
 import { getCollectionByHandle } from "@/lib/data/collections"
-import { getTagIdsByValue, searchProducts } from "@/lib/data/products"
+import { searchProducts } from "@/lib/data/products"
 
 /**
  * Home page.
@@ -34,25 +34,32 @@ export const metadata = {
 /**
  * The three rails task 56 names.
  *
- * Sale was held back until it had data to stand on — a rail of full-price
- * products under a Sale heading would be a lie on the shop's most-visited page.
- * It now sources from the Sale collection, whose products carry a real
- * compare-at price from the "Demo sale" price list, so the cards show a genuine
- * saving.
+ * Sale is not a collection. It is every product with a real discount from an
+ * active Sale price list, whatever collection it sits in. A Medusa product holds
+ * one collection, so a discounted Best Seller could never also be in a Sale
+ * collection — deriving Sale from the price is the only way it shows in both.
+ *
+ * New In and Best Sellers are collections merchandised by hand in admin.
  *
  * Sale leads: it is the strongest reason to keep scrolling, and below the hero
  * is the only place on a 360px screen where that is true.
  */
 type Rail =
-  | { title: string; tag: string; viewAllHref: string }
+  | { title: string; onSale: true; viewAllHref: string }
   | { title: string; collection: string; viewAllHref: string }
 
 const RAILS: Rail[] = [
-  { title: "Sale", collection: "sale", viewAllHref: "/collections/sale" },
-  // A tag-sourced rail has no page of its own to land on, so these point at
-  // search rather than a route that does not exist.
-  { title: "New In", tag: "New Arrival", viewAllHref: "/search" },
-  { title: "Best Sellers", tag: "Bestseller", viewAllHref: "/search" },
+  { title: "Sale", onSale: true, viewAllHref: "/collections/sale" },
+  {
+    title: "New In",
+    collection: "new-arrivals",
+    viewAllHref: "/collections/new-arrivals",
+  },
+  {
+    title: "Best Sellers",
+    collection: "best-sellers",
+    viewAllHref: "/collections/best-sellers",
+  },
 ]
 
 export default async function HomePage() {
@@ -70,8 +77,7 @@ export default async function HomePage() {
         const collection = await getCollectionByHandle(rail.collection)
         scope = collection ? { collectionIds: [collection.id] } : null
       } else {
-        const tagIds = await getTagIdsByValue([rail.tag])
-        scope = tagIds.length ? { tagIds } : null
+        scope = { onSale: true }
       }
 
       const { products } = scope

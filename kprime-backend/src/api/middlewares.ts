@@ -90,8 +90,41 @@ const rateLimit = (name: string, limit: number) => {
   };
 };
 
+/**
+ * A product cannot be created without at least one category.
+ *
+ * The admin form labels Categories "(Optional)" and offers no way to change
+ * that, so the rule lives here: the request is refused and the admin shows the
+ * message as an error toast.
+ *
+ * Covers the admin create form only. CSV import and `medusa exec` scripts
+ * create products through workflows without this route, so they are not checked.
+ */
+const requireCategory = (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  const categories = (req.body as { categories?: unknown } | undefined)
+    ?.categories;
+
+  if (!Array.isArray(categories) || !categories.length) {
+    return res.status(400).json({
+      type: "invalid_data",
+      message: "Choose at least one category before saving this product.",
+    });
+  }
+
+  next();
+};
+
 export default defineMiddlewares({
   routes: [
+    {
+      matcher: "/admin/products",
+      method: "POST",
+      middlewares: [requireCategory],
+    },
     {
       matcher: "/store/order-lookup",
       method: "POST",

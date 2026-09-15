@@ -32,19 +32,33 @@ import { parseFilters } from "@/lib/filters/url-state"
  */
 export const dynamic = "force-dynamic"
 
+/**
+ * Not a Medusa collection. `/collections/sale` is every product with a real
+ * discount, whatever collection it belongs to — a product holds only one
+ * collection, so a discounted Best Seller could never also sit in a Sale one.
+ * A real collection created in admin with this handle is shadowed by this.
+ */
+const SALE_HANDLE = "sale"
+
+const SALE = { handle: SALE_HANDLE, title: "Sale" }
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ handle: string }>
 }): Promise<Metadata> {
   const { handle } = await params
-  const collection = await getCollectionByHandle(handle)
+  const collection =
+    handle === SALE_HANDLE ? SALE : await getCollectionByHandle(handle)
 
   if (!collection) {
     return { title: "Collection not found" }
   }
 
-  const description = `${collection.title} — hand-picked and delivered across Pakistan, cash on delivery.`
+  const description =
+    handle === SALE_HANDLE
+      ? "Discounted prices, delivered across Pakistan, cash on delivery."
+      : `${collection.title} — hand-picked and delivered across Pakistan, cash on delivery.`
 
   return {
     title: collection.title,
@@ -64,7 +78,10 @@ export default async function CollectionPage({
 }: PageProps<"/collections/[handle]">) {
   const [{ handle }, rawSearchParams] = await Promise.all([params, searchParams])
 
-  const collection = await getCollectionByHandle(handle)
+  const isSale = handle === SALE_HANDLE
+
+  const found = isSale ? undefined : await getCollectionByHandle(handle)
+  const collection = isSale ? SALE : found
 
   if (!collection) {
     notFound()
@@ -75,7 +92,7 @@ export default async function CollectionPage({
   // No descendants to gather — a collection's products are exactly the ones
   // linked to it, so its own id is the whole scope.
   const { products, count, page, pageCount } = await searchProducts({
-    collectionIds: [collection.id],
+    ...(found ? { collectionIds: [found.id] } : { onSale: true }),
     sort: filters.sort,
     page: filters.page,
   })
@@ -120,7 +137,9 @@ export default async function CollectionPage({
           // No relaxation suggestions here — there are no filters to relax, so
           // an empty collection is an empty collection.
           <p className="py-12 text-center text-muted">
-            Nothing in this collection yet.
+            {isSale
+              ? "Nothing on sale right now."
+              : "Nothing in this collection yet."}
           </p>
         )}
       </div>

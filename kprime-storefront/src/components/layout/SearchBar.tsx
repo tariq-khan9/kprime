@@ -214,7 +214,7 @@ export function SearchBar({ className }: { className?: string }) {
           // text-base is 16px and must stay there: below it iOS Safari zooms the
           // viewport on focus and does not zoom back out.
           className={cn(
-            "h-11 w-full rounded-md border border-line bg-paper pl-10 pr-3 text-base",
+            "h-10 w-full rounded-md border border-line bg-paper pl-10 pr-3 text-base",
             "text-brand placeholder:text-muted",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream"
           )}
