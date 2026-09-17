@@ -4,7 +4,10 @@ import {
   MedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http";
-import { Modules } from "@medusajs/framework/utils";
+import {
+  ContainerRegistrationKeys,
+  Modules,
+} from "@medusajs/framework/utils";
 
 /**
  * Rate limits for the two unauthenticated endpoints that take an email address.
@@ -118,12 +121,115 @@ const requireCategory = (
   next();
 };
 
+/**
+ * A product cannot be published unless every variant has a PKR price.
+ *
+ * Medusa treats prices as optional, but on a PKR-only store an unpriced
+ * product lists with no price and then fails at add-to-cart. Drafts are left
+ * alone so a product can be created first and priced later.
+ *
+ * The admin drops empty price cells before sending, so an unpriced variant
+ * arrives as `prices: []`. The PKR column and the Pakistan region column both
+ * send `currency_code: "pkr"`, so either one counts.
+ *
+ * Same caveat as `requireCategory`: CSV import and scripts are not checked.
+ */
+const PRICE_MESSAGE =
+  "Enter a PKR price for every variant before publishing, or save as draft.";
+
+type PriceLike = { currency_code?: string | null; amount?: unknown } | null;
+
+const hasPkrPrice = (prices: PriceLike[] | null | undefined) =>
+  (prices ?? []).some(
+    (price) =>
+      price?.currency_code?.toLowerCase() === "pkr" &&
+      Number(price.amount) > 0
+  );
+
+const refusePrice = (res: MedusaResponse) =>
+  res.status(400).json({ type: "invalid_data", message: PRICE_MESSAGE });
+
+const requirePriceToPublish = (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  const body = req.body as
+    | { status?: string; variants?: { prices?: PriceLike[] }[] }
+    | undefined;
+
+  if (body?.status !== "published") {
+    return next();
+  }
+
+  const variants = body.variants ?? [];
+
+  if (!variants.length || !variants.every((v) => hasPkrPrice(v.prices))) {
+    return refusePrice(res);
+  }
+
+  next();
+};
+
+/**
+ * The same rule for a draft published later from the Edit form. That request
+ * carries only the status, so the saved prices are read back.
+ *
+ * Only the draft-to-published step is checked. A product that is already
+ * published keeps saving normally, so fixing a typo in its title is never
+ * blocked by this.
+ */
+const requirePriceOnPublish = async (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  if ((req.body as { status?: string } | undefined)?.status !== "published") {
+    return next();
+  }
+
+  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
+
+  const {
+    data: [product],
+  } = await query.graph({
+    entity: "product",
+    fields: [
+      "status",
+      "variants.id",
+      "variants.prices.amount",
+      "variants.prices.currency_code",
+    ],
+    filters: { id: req.params.id },
+  });
+
+  // An unknown id is the route's own 404 to give, not this check's.
+  if (!product || product.status === "published") {
+    return next();
+  }
+
+  // `prices` comes through the variant–price-set link, which the generated
+  // entity types do not include.
+  const variants = (product.variants ?? []) as { prices?: PriceLike[] }[];
+
+  if (!variants.length || !variants.every((v) => hasPkrPrice(v?.prices))) {
+    return refusePrice(res);
+  }
+
+  next();
+};
+
 export default defineMiddlewares({
   routes: [
     {
       matcher: "/admin/products",
       method: "POST",
-      middlewares: [requireCategory],
+      middlewares: [requireCategory, requirePriceToPublish],
+    },
+    {
+      matcher: "/admin/products/:id",
+      method: "POST",
+      middlewares: [requirePriceOnPublish],
     },
     {
       matcher: "/store/order-lookup",
