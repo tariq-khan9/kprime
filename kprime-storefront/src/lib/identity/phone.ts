@@ -15,17 +15,30 @@
  * valid: this shop delivers by courier and confirms by phone call, and a
  * landline cannot receive the WhatsApp message that follows an order.
  */
-const NORMALISED = /^923\d{9}$/
+const PAKISTANI = /^923\d{9}$/
+
+/**
+ * Any other country, normalised: E.164 without the `+`. A country code never
+ * starts with 0, and the whole number is 8 to 15 digits. `92` is excluded so a
+ * Pakistani landline cannot slip in through this branch.
+ */
+const INTERNATIONAL = /^(?!92)[1-9]\d{7,14}$/
 
 /** Everything a human might type between the digits. */
 const SEPARATORS = /[\s\-().]/g
 
 /**
- * A raw phone string reduced to `923001234567`, or null if it is not a valid
- * Pakistani mobile number.
+ * A raw phone string reduced to digits with the country code first, or null if
+ * it is not a valid mobile number.
  *
- * Accepts `03xxxxxxxxx`, `+923xxxxxxxxx`, `00923xxxxxxxxx` and a bare
- * `3xxxxxxxxx`, with any mix of spaces, dashes, dots and brackets.
+ * Pakistani: `03xxxxxxxxx`, `+923xxxxxxxxx`, `00923xxxxxxxxx` or a bare
+ * `3xxxxxxxxx` → `923001234567`.
+ *
+ * Anywhere else: must start with `+` or `00`, e.g. `+44 7700 900123` →
+ * `447700900123`. Without the prefix a foreign number cannot be told apart from
+ * a Pakistani one typed without its 0, so it is rejected rather than guessed.
+ *
+ * Any mix of spaces, dashes, dots and brackets is accepted.
  *
  * Returns null rather than throwing: an invalid number is a form validation
  * message, not an exception. The caller decides what to say about it.
@@ -36,10 +49,11 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   }
 
   let digits = raw.replace(SEPARATORS, "").trim()
+  let hasCountryCode = false
 
-  // A leading + carries no information once the country code is explicit.
   if (digits.startsWith("+")) {
     digits = digits.slice(1)
+    hasCountryCode = true
   }
 
   // Anything left that is not a digit means the input was never a number —
@@ -52,6 +66,7 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   // 00 is the international prefix in the format Pakistani carriers print.
   if (digits.startsWith("00")) {
     digits = digits.slice(2)
+    hasCountryCode = true
   }
 
   if (digits.startsWith("92")) {
@@ -60,6 +75,8 @@ export function normalizePhone(raw: string | null | undefined): string | null {
     if (digits.startsWith("920")) {
       digits = `92${digits.slice(3)}`
     }
+  } else if (hasCountryCode) {
+    return INTERNATIONAL.test(digits) ? digits : null
   } else if (digits.startsWith("0")) {
     // National format: the trunk 0 becomes the country code.
     digits = `92${digits.slice(1)}`
@@ -68,12 +85,12 @@ export function normalizePhone(raw: string | null | undefined): string | null {
     digits = `92${digits}`
   }
 
-  return NORMALISED.test(digits) ? digits : null
+  return PAKISTANI.test(digits) ? digits : null
 }
 
 /** True when a string is already in normalised form. */
 export function isNormalisedPhone(value: string): boolean {
-  return NORMALISED.test(value)
+  return PAKISTANI.test(value) || INTERNATIONAL.test(value)
 }
 
 /**
@@ -114,9 +131,19 @@ export function syntheticEmail(normalised: string): string {
   return `${normalised}@${SYNTHETIC_EMAIL_DOMAIN}`
 }
 
-/** `923001234567` → `0300 1234567`, for reading back to a shopper. */
+/**
+ * `923001234567` → `0300 1234567`, `447700900123` → `+447700900123`, for
+ * reading back to a shopper.
+ *
+ * The foreign form keeps its `+`, so pasting it back into a phone field
+ * normalises to the same number again.
+ */
 export function formatPhoneForDisplay(normalised: string): string {
-  if (!isNormalisedPhone(normalised)) {
+  if (INTERNATIONAL.test(normalised)) {
+    return `+${normalised}`
+  }
+
+  if (!PAKISTANI.test(normalised)) {
     return normalised
   }
 

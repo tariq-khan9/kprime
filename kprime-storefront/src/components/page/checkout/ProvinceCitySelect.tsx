@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 
+import { Input } from "@/components/ui/Input"
 import { Select } from "@/components/ui/Select"
 import type { Province } from "@/lib/data/shipping"
 
@@ -29,6 +30,9 @@ export type ProvinceCitySelectProps = {
  * Changing province clears the city. Keeping a Punjab city selected under
  * Sindh would submit a combination that matches no zone — the same dead end,
  * reached a different way.
+ *
+ * **"Other" is the one text input.** Its zone matches on province code alone,
+ * so any typed city still gets shipping options. `saveAddress` rejects it empty.
  */
 export function ProvinceCitySelect({
   provinces,
@@ -40,8 +44,8 @@ export function ProvinceCitySelect({
   const [province, setProvince] = useState(defaultProvince ?? "")
   const [city, setCity] = useState(defaultCity ?? "")
 
-  const cities =
-    provinces.find((entry) => entry.code === province)?.cities ?? []
+  const selected = provinces.find((entry) => entry.code === province)
+  const cities = selected?.cities ?? []
 
   return (
     <>
@@ -64,24 +68,37 @@ export function ProvinceCitySelect({
         }))}
       />
 
-      <Select
-        name="city"
-        label="City"
-        required
-        // Disabled rather than hidden, so the field is visibly waiting on the
-        // province instead of appearing from nowhere.
-        disabled={!province}
-        placeholder={province ? "Choose a city" : "Choose a province first"}
-        value={city}
-        error={cityError}
-        onChange={(event) => setCity(event.target.value)}
-        hint={
-          province && cities.length === 0
-            ? "We do not deliver to this province yet."
-            : undefined
-        }
-        options={cities.map((name) => ({ value: name, label: name }))}
-      />
+      {selected?.any_city ? (
+        <Input
+          name="city"
+          label="City"
+          required
+          autoComplete="address-level2"
+          value={city}
+          error={cityError}
+          hint="Your city and country."
+          onChange={(event) => setCity(event.target.value)}
+        />
+      ) : (
+        <Select
+          name="city"
+          label="City"
+          required
+          // Disabled rather than hidden, so the field is visibly waiting on the
+          // province instead of appearing from nowhere.
+          disabled={!province}
+          placeholder={province ? "Choose a city" : "Choose a province first"}
+          value={city}
+          error={cityError}
+          onChange={(event) => setCity(event.target.value)}
+          hint={
+            province && cities.length === 0
+              ? "We do not deliver to this province yet."
+              : undefined
+          }
+          options={cities.map((name) => ({ value: name, label: name }))}
+        />
+      )}
     </>
   )
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { saveContactAction } from "@/lib/data/checkout.actions"
 import type { CheckoutError, CheckoutState } from "@/lib/data/checkout"
+import { formatPhoneForDisplay } from "@/lib/identity/phone"
 
 export type ContactStepProps = {
   state: CheckoutState
@@ -78,8 +79,12 @@ export function ContactStep({ state }: ContactStepProps) {
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        defaultValue={state.contactPhone ?? ""}
-        hint="We call this number to confirm your order."
+        // The display form, not the stored digits: a foreign number needs its
+        // `+` back, or resubmitting this step would reject it.
+        defaultValue={
+          state.contactPhone ? formatPhoneForDisplay(state.contactPhone) : ""
+        }
+        hint="We call this number to confirm your order. Outside Pakistan? Start with + and your country code."
         error={errorFor("phone")}
       />
 

@@ -179,7 +179,8 @@ export async function saveContact(
   if (!phone) {
     errors.push({
       field: "phone",
-      message: "Enter a Pakistani mobile number, like 0300 1234567.",
+      message:
+        "Enter a mobile number, like 0300 1234567. Outside Pakistan, start with + and your country code.",
     })
   }
 
@@ -228,6 +229,9 @@ export async function saveAddress(
 ): Promise<CheckoutResult> {
   const errors: CheckoutError[] = []
   const address1 = details.address1.trim()
+  // Only matters for a typed city ("Other"). A dropdown value is already exact,
+  // and trimming cannot change it.
+  const city = details.city.trim()
 
   if (address1.length < 5) {
     errors.push({
@@ -240,9 +244,9 @@ export async function saveAddress(
     errors.push({ field: "province", message: "Choose a province." })
   }
 
-  if (!details.city) {
-    errors.push({ field: "city", message: "Choose a city." })
-  } else if (!(await isDeliverableCity(details.city))) {
+  if (!city) {
+    errors.push({ field: "city", message: "Enter or choose a city." })
+  } else if (!(await isDeliverableCity(details.province, city))) {
     errors.push({ field: "city", message: "We do not deliver to that city yet." })
   }
 
@@ -252,7 +256,8 @@ export async function saveAddress(
   if (typedDelivery && !deliveryPhone) {
     errors.push({
       field: "deliveryPhone",
-      message: "Enter a Pakistani mobile number, or leave this blank.",
+      message:
+        "Enter a mobile number (start with + and the country code if it's not Pakistani), or leave this blank.",
     })
   }
 
@@ -270,7 +275,7 @@ export async function saveAddress(
         first_name: parts[0] ?? "",
         last_name: parts.slice(1).join(" "),
         address_1: address1,
-        city: details.city,
+        city,
         province: details.province,
         country_code: "pk",
         // The delivery number when one was given, otherwise the contact one —
