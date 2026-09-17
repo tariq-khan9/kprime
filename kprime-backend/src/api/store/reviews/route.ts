@@ -22,7 +22,8 @@ import { parseOrderNumber } from "../../../lib/order-number";
 
 const SYNTHETIC_DOMAIN = "nomail.kprime.pk";
 
-const NORMALISED = /^923\d{9}$/;
+const PAKISTANI = /^923\d{9}$/;
+const INTERNATIONAL = /^(?!92)[1-9]\d{7,14}$/;
 const SEPARATORS = /[\s\-().]/g;
 
 /** Mirrors `normalizePhone` in the storefront and /store/track. Keep in step. */
@@ -32,9 +33,11 @@ function normalizePhone(raw: unknown): string | null {
   }
 
   let digits = raw.replace(SEPARATORS, "").trim();
+  let hasCountryCode = false;
 
   if (digits.startsWith("+")) {
     digits = digits.slice(1);
+    hasCountryCode = true;
   }
 
   if (!/^\d+$/.test(digits)) {
@@ -43,19 +46,30 @@ function normalizePhone(raw: unknown): string | null {
 
   if (digits.startsWith("00")) {
     digits = digits.slice(2);
+    hasCountryCode = true;
   }
 
   if (digits.startsWith("92")) {
     if (digits.startsWith("920")) {
       digits = `92${digits.slice(3)}`;
     }
+  } else if (hasCountryCode) {
+    return INTERNATIONAL.test(digits) ? digits : null;
   } else if (digits.startsWith("0")) {
     digits = `92${digits.slice(1)}`;
   } else if (digits.startsWith("3")) {
     digits = `92${digits}`;
   }
 
-  return NORMALISED.test(digits) ? digits : null;
+  return PAKISTANI.test(digits) ? digits : null;
+}
+
+/** Same as /store/track: a stored foreign number has lost its `+`. */
+function normalizeStoredPhone(stored: unknown): string | null {
+  return (
+    normalizePhone(stored) ??
+    (typeof stored === "string" ? normalizePhone(`+${stored}`) : null)
+  );
 }
 
 const GENERIC_ERROR =
@@ -239,7 +253,7 @@ export async function POST(
 
   const order = orders?.[0];
 
-  const addressPhone = normalizePhone(order?.shipping_address?.phone);
+  const addressPhone = normalizeStoredPhone(order?.shipping_address?.phone);
 
   const identityMatches =
     order &&

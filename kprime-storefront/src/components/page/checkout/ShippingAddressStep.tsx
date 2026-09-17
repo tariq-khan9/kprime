@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input"
 import { saveAddressAction } from "@/lib/data/checkout.actions"
 import type { CheckoutError, CheckoutState } from "@/lib/data/checkout"
 import type { Province } from "@/lib/data/shipping"
+import { formatPhoneForDisplay } from "@/lib/identity/phone"
 
 export type ShippingAddressStepProps = {
   state: CheckoutState
@@ -96,7 +97,10 @@ export function ShippingAddressStep({
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        defaultValue={state.deliveryPhone ?? ""}
+        // The display form, so a foreign number keeps its `+` on resubmit.
+        defaultValue={
+          state.deliveryPhone ? formatPhoneForDisplay(state.deliveryPhone) : ""
+        }
         hint="Only if the courier should call someone else at the door."
         error={errorFor("deliveryPhone")}
       />

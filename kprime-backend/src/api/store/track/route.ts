@@ -32,7 +32,10 @@ import { parseOrderNumber } from "../../../lib/order-number";
 const SYNTHETIC_DOMAIN = "nomail.kprime.pk";
 
 /** `92` + `3` + nine digits. Landlines are not valid contact numbers here. */
-const NORMALISED = /^923\d{9}$/;
+const PAKISTANI = /^923\d{9}$/;
+
+/** Any other country: E.164 without the `+`, and never starting `92`. */
+const INTERNATIONAL = /^(?!92)[1-9]\d{7,14}$/;
 
 const SEPARATORS = /[\s\-().]/g;
 
@@ -43,9 +46,11 @@ function normalizePhone(raw: unknown): string | null {
   }
 
   let digits = raw.replace(SEPARATORS, "").trim();
+  let hasCountryCode = false;
 
   if (digits.startsWith("+")) {
     digits = digits.slice(1);
+    hasCountryCode = true;
   }
 
   if (!/^\d+$/.test(digits)) {
@@ -54,19 +59,34 @@ function normalizePhone(raw: unknown): string | null {
 
   if (digits.startsWith("00")) {
     digits = digits.slice(2);
+    hasCountryCode = true;
   }
 
   if (digits.startsWith("92")) {
     if (digits.startsWith("920")) {
       digits = `92${digits.slice(3)}`;
     }
+  } else if (hasCountryCode) {
+    return INTERNATIONAL.test(digits) ? digits : null;
   } else if (digits.startsWith("0")) {
     digits = `92${digits.slice(1)}`;
   } else if (digits.startsWith("3")) {
     digits = `92${digits}`;
   }
 
-  return NORMALISED.test(digits) ? digits : null;
+  return PAKISTANI.test(digits) ? digits : null;
+}
+
+/**
+ * A phone read back off an order. Storefront orders store it already
+ * normalised, and a foreign number stored that way has lost the `+` that
+ * `normalizePhone` needs, so it is retried with one.
+ */
+function normalizeStoredPhone(stored: unknown): string | null {
+  return (
+    normalizePhone(stored) ??
+    (typeof stored === "string" ? normalizePhone(`+${stored}`) : null)
+  );
 }
 
 /**
@@ -200,7 +220,7 @@ export async function POST(req: MedusaRequest<TrackBody>, res: MedusaResponse) {
   // and nothing else, with the shipping address phone as a fallback for orders
   // placed through admin.
   const syntheticEmail = `${phone}@${SYNTHETIC_DOMAIN}`;
-  const addressPhone = normalizePhone(order?.shipping_address?.phone);
+  const addressPhone = normalizeStoredPhone(order?.shipping_address?.phone);
 
   const matchesPhone =
     order &&

@@ -16,7 +16,16 @@ export const PROVINCES = {
   is: "Islamabad Capital Territory",
   gb: "Gilgit-Baltistan",
   jk: "Azad Jammu & Kashmir",
+  // Not an ISO code — the catch-all for shoppers outside Pakistan. Checkout
+  // takes a typed city here instead of a dropdown.
+  ot: "Other",
 } as const;
+
+/**
+ * The catch-all city and province label. Sorted last in the checkout dropdowns
+ * so it never sits between two real places.
+ */
+export const OTHER = "Other";
 
 export type ProvinceCode = keyof typeof PROVINCES;
 

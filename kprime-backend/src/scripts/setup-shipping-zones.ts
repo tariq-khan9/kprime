@@ -1,7 +1,7 @@
 import { ExecArgs } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 
-import { PROVINCES, ProvinceCode } from "../lib/provinces";
+import { OTHER, PROVINCES, ProvinceCode } from "../lib/provinces";
 
 /**
  * Task 5 — the four delivery price tiers.
@@ -15,7 +15,9 @@ import { PROVINCES, ProvinceCode } from "../lib/provinces";
  * documented exception.
  *
  * Zones are PRICE TIERS, not cities. `Metro` is one zone holding ten cities, not
- * ten zones. Task 6 attaches one Standard and one Express option per zone.
+ * ten zones. `Outside Pakistan` is the fifth, covering the whole "Other" province
+ * rather than listed cities. Task 6 attaches one Standard and one Express option
+ * per zone.
  *
  * Idempotent, and safe to re-run after task 6: a zone that already exists has its
  * cities replaced in place, so the shipping options hanging off it survive. Only
@@ -33,6 +35,12 @@ type ZoneSpec = {
   /** Why this tier exists — printed on run so the tiering is reviewable. */
   rationale: string;
   cities: [ProvinceCode, string][];
+  /**
+   * Whole provinces, matched on province code alone, so any city typed at
+   * checkout still resolves to this zone. Only for "Other", where there is no
+   * list to choose from.
+   */
+  provinces?: ProvinceCode[];
 };
 
 /**
@@ -94,6 +102,14 @@ const ZONES: ZoneSpec[] = [
       ["kp", "Mingora"],
       ["kp", "Haripur"],
       ["kp", "Bannu"],
+      ["kp", "Karak"],
+      ["kp", "Lakki Marwat"],
+      ["kp", "Hangu"],
+      ["kp", "Tank"],
+      ["kp", "Timergara"],
+      ["kp", "Batkhela"],
+      ["kp", "Batagram"],
+      ["kp", "Topi"],
       ["pb", "Sargodha"],
       ["pb", "Bahawalpur"],
       ["pb", "Rahim Yar Khan"],
@@ -109,12 +125,66 @@ const ZONES: ZoneSpec[] = [
       ["pb", "Attock"],
       ["pb", "Chakwal"],
       ["pb", "Vehari"],
+      ["pb", "Wah Cantt"],
+      ["pb", "Taxila"],
+      ["pb", "Hafizabad"],
+      ["pb", "Mandi Bahauddin"],
+      ["pb", "Narowal"],
+      ["pb", "Muzaffargarh"],
+      ["pb", "Khanewal"],
+      ["pb", "Pakpattan"],
+      ["pb", "Toba Tek Singh"],
+      ["pb", "Bahawalnagar"],
+      ["pb", "Khushab"],
+      ["pb", "Mianwali"],
+      ["pb", "Bhakkar"],
+      ["pb", "Layyah"],
+      ["pb", "Lodhran"],
+      ["pb", "Nankana Sahib"],
+      ["pb", "Rajanpur"],
+      ["pb", "Kamoke"],
+      ["pb", "Daska"],
+      ["pb", "Murree"],
+      ["pb", "Gojra"],
+      ["pb", "Burewala"],
+      ["pb", "Sadiqabad"],
+      ["pb", "Kharian"],
+      ["pb", "Wazirabad"],
+      ["pb", "Pattoki"],
+      ["pb", "Hasilpur"],
+      ["pb", "Khanpur"],
+      ["pb", "Jaranwala"],
+      ["pb", "Kot Addu"],
+      ["pb", "Talagang"],
       ["sd", "Sukkur"],
       ["sd", "Larkana"],
       ["sd", "Nawabshah"],
       ["sd", "Mirpur Khas"],
+      ["sd", "Jacobabad"],
+      ["sd", "Shikarpur"],
+      ["sd", "Khairpur"],
+      ["sd", "Dadu"],
+      ["sd", "Thatta"],
+      ["sd", "Badin"],
+      ["sd", "Sanghar"],
+      ["sd", "Tando Adam"],
+      ["sd", "Tando Allahyar"],
+      ["sd", "Tando Muhammad Khan"],
+      ["sd", "Kotri"],
+      ["sd", "Ghotki"],
+      ["sd", "Umerkot"],
+      ["sd", "Matiari"],
+      ["sd", "Kandhkot"],
+      ["sd", "Jamshoro"],
+      ["sd", "Naushahro Feroze"],
+      ["sd", "Qambar"],
+      ["ba", "Hub"],
       ["jk", "Mirpur"],
       ["jk", "Muzaffarabad"],
+      ["jk", "Kotli"],
+      ["jk", "Bhimber"],
+      ["jk", "Rawalakot"],
+      ["jk", "Bagh"],
     ],
   },
   {
@@ -124,15 +194,51 @@ const ZONES: ZoneSpec[] = [
       ["gb", "Gilgit"],
       ["gb", "Skardu"],
       ["gb", "Hunza"],
+      ["gb", "Chilas"],
+      ["gb", "Khaplu"],
+      ["gb", "Astore"],
+      ["gb", "Gahkuch"],
       ["kp", "Chitral"],
       ["kp", "Parachinar"],
       ["kp", "Wana"],
+      ["kp", "Miranshah"],
+      ["kp", "Khar"],
+      ["kp", "Dir"],
+      ["kp", "Besham"],
+      ["kp", "Kalam"],
+      ["sd", "Mithi"],
       ["ba", "Gwadar"],
       ["ba", "Turbat"],
       ["ba", "Khuzdar"],
       ["ba", "Zhob"],
       ["ba", "Panjgur"],
+      ["ba", "Sibi"],
+      ["ba", "Chaman"],
+      ["ba", "Loralai"],
+      ["ba", "Dera Murad Jamali"],
+      ["ba", "Nushki"],
+      ["ba", "Kalat"],
+      ["ba", "Mastung"],
+      ["ba", "Pishin"],
+      ["ba", "Kharan"],
+      ["ba", "Dalbandin"],
+      ["ba", "Pasni"],
+      ["ba", "Ormara"],
+      // A town not listed above. Billed at the dearest tier because it could be
+      // anywhere in the province; the verification call settles the rest.
+      ["kp", OTHER],
+      ["pb", OTHER],
+      ["sd", OTHER],
+      ["ba", OTHER],
+      ["gb", OTHER],
+      ["jk", OTHER],
     ],
+  },
+  {
+    name: "Outside Pakistan",
+    rationale: "rare orders from abroad — no courier rate, charges agreed on the call",
+    cities: [],
+    provinces: ["ot"],
   },
 ];
 
@@ -146,17 +252,20 @@ export default async function setupShippingZones({ container }: ExecArgs) {
 
   // A city in two tiers would be billed at whichever zone Medusa matched first.
   // Cheaper to fail here than to find out from a month of underpriced orders.
+  // Keyed on province too: "Other" legitimately appears once per province, and
+  // Medusa matches geo zones on province_code as well as the city string.
   const seen = new Map<string, string>();
   for (const zone of ZONES) {
-    for (const [, city] of zone.cities) {
-      const existing = seen.get(city);
+    for (const [province, city] of zone.cities) {
+      const key = `${province}/${city}`;
+      const existing = seen.get(key);
       if (existing) {
         throw new Error(
-          `"${city}" is in both "${existing}" and "${zone.name}". ` +
+          `"${key}" is in both "${existing}" and "${zone.name}". ` +
             `Every city belongs to exactly one tier.`
         );
       }
-      seen.set(city, zone.name);
+      seen.set(key, zone.name);
     }
   }
 
@@ -204,7 +313,7 @@ export default async function setupShippingZones({ container }: ExecArgs) {
   const existingZones = set.service_zones ?? [];
   const byName = new Map(existingZones.map((z) => [z.name, z]));
 
-  // ---- Drop zones that are not one of the four ----------------------------
+  // ---- Drop zones that are not one of the tiers ----------------------------
   // On a first run this is the seeded country-wide "Pakistan" zone. Its shipping
   // options must go first: they are foreign-keyed to the zone, so the delete
   // fails while they exist. Task 6 recreates options per zone — until it runs,
@@ -233,14 +342,21 @@ export default async function setupShippingZones({ container }: ExecArgs) {
     logger.info(`Removed service zone "${zone.name}"`);
   }
 
-  // ---- Create or update the four tiers ------------------------------------
+  // ---- Create or update the tiers ------------------------------------
   for (const spec of ZONES) {
-    const geo_zones = spec.cities.map(([province_code, city]) => ({
-      type: "city" as const,
-      country_code: COUNTRY,
-      province_code,
-      city,
-    }));
+    const geo_zones = [
+      ...spec.cities.map(([province_code, city]) => ({
+        type: "city" as const,
+        country_code: COUNTRY,
+        province_code,
+        city,
+      })),
+      ...(spec.provinces ?? []).map((province_code) => ({
+        type: "province" as const,
+        country_code: COUNTRY,
+        province_code,
+      })),
+    ];
 
     const existing = byName.get(spec.name);
 

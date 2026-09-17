@@ -27,7 +27,10 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 /** Matches the storefront's SYNTHETIC_EMAIL_DOMAIN. Do not change one alone. */
 const SYNTHETIC_DOMAIN = "nomail.kprime.pk";
 
-/** `923001234567@nomail.kprime.pk` -> `923001234567`. */
+/**
+ * `923001234567@nomail.kprime.pk` -> `923001234567`, and the same for a foreign
+ * number (`447700900123`). Both patterns match the storefront's normalised forms.
+ */
 function phoneFromSyntheticEmail(email: string | null | undefined) {
   if (!email || !email.endsWith(`@${SYNTHETIC_DOMAIN}`)) {
     return null;
@@ -35,7 +38,7 @@ function phoneFromSyntheticEmail(email: string | null | undefined) {
 
   const local = email.slice(0, -(SYNTHETIC_DOMAIN.length + 1));
 
-  return /^923\d{9}$/.test(local) ? local : null;
+  return /^(923\d{9}|(?!92)[1-9]\d{7,14})$/.test(local) ? local : null;
 }
 
 export default async function orderIdentityHandler({

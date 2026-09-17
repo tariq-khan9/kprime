@@ -3,7 +3,8 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { createShippingOptionsWorkflow } from "@medusajs/medusa/core-flows";
 
 /**
- * Task 6 — one Standard and one Express option per zone, Standard only on Remote.
+ * Task 6 — one Standard and one Express option per zone, Standard only on Remote
+ * and Outside Pakistan.
  *
  * Run with: npx medusa exec ./src/scripts/setup-shipping-options.ts
  *
@@ -13,7 +14,7 @@ import { createShippingOptionsWorkflow } from "@medusajs/medusa/core-flows";
  *
  * Creates only what is missing and never updates an option that already exists,
  * so re-running this cannot overwrite a rate edited in admin. Prices are yours to
- * change there; this script only guarantees the seven exist.
+ * change there; this script only guarantees the eight exist.
  */
 
 /**
@@ -52,6 +53,11 @@ const OPTIONS_BY_ZONE: Record<string, OptionSpec[]> = {
   // commit to an expedited window for them.
   Remote: [
     { code: "standard", name: "Standard Delivery (5–8 days)", amount: STANDARD_RATE },
+  ],
+  // Placeholder amount. No courier quotes abroad from a rate sheet — the real
+  // charge is agreed on the verification call before dispatch.
+  "Outside Pakistan": [
+    { code: "standard", name: "International Delivery (we'll call to confirm charges)", amount: STANDARD_RATE },
   ],
 };
 

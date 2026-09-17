@@ -6,6 +6,11 @@ export type Province = {
   /** Short code, e.g. "pb". Stable across renames; used as the select value. */
   code: string
   name: string
+  /**
+   * True for "Other": the zone covers the whole province, so checkout takes a
+   * typed city instead of a dropdown and `cities` is empty.
+   */
+  any_city: boolean
   /** City names exactly as the geo zones spell them. */
   cities: string[]
 }
@@ -56,16 +61,26 @@ export async function getCitiesFor(provinceCode: string): Promise<string[]> {
 }
 
 /**
- * Whether a city is one we actually deliver to.
+ * Whether a city is one we actually deliver to, within its province.
  *
  * Checked at the API boundary before an address is written, because a city
  * string that matches no geo zone produces zero shipping options and dead-ends
- * checkout with no error of its own.
+ * checkout with no error of its own. Matched per province because Medusa
+ * matches the province code too. An `any_city` province accepts any non-empty
+ * city.
  */
-export async function isDeliverableCity(city: string): Promise<boolean> {
+export async function isDeliverableCity(
+  provinceCode: string,
+  city: string
+): Promise<boolean> {
   const provinces = await getProvinces()
+  const province = provinces.find((entry) => entry.code === provinceCode)
 
-  return provinces.some((province) => province.cities.includes(city))
+  if (!province) {
+    return false
+  }
+
+  return province.any_city ? city.length > 0 : province.cities.includes(city)
 }
 
 export type ShippingOption = {
